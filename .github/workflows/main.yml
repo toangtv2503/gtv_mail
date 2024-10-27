@@ -1,0 +1,62 @@
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+  push:
+    branches:
+      - main
+      - master
+      - develop
+name: "Build & Release"
+jobs:
+  build:
+    name: Build & Release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '17'
+      - uses: subosito/flutter-action@v1
+        with:
+          flutter-version: '3.24.3'
+
+      # Install dependencies
+      - run: flutter pub get
+
+      # Android release build
+      - name: Build Android Release APK
+        run: flutter build apk --release --split-per-abi
+        continue-on-error: true
+
+      # iOS release build
+      - name: Build iOS Release IPA
+        run: |
+          flutter build ios --release --no-codesign
+          cd build/ios/iphoneos
+          mkdir Payload
+          cd Payload
+          ln -s ../Runner.app
+          cd ..
+          zip -r app.ipa Payload
+        continue-on-error: true
+
+      # Web build
+      - name: Build Web
+        run: |
+          flutter build web
+          cd build/web
+          zip -r web.zip .
+        continue-on-error: true
+
+      # Push to Releases
+      - name: Push to Releases
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: |
+            build/app/outputs/apk/release/*.apk,
+            build/ios/iphoneos/app.ipa,
+            build/web/web.zip
+          tag: v1.0.${{ github.run_number }}
+          token: ${{ secrets.TOKEN }}
