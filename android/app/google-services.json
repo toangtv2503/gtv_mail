@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "497678894055",
+    "project_id": "gtv-mail",
+    "storage_bucket": "gtv-mail.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:497678894055:android:953d8c43c20a681bbd3342",
+        "android_client_info": {
+          "package_name": "com.toangtv.gtv_mail"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDT-95yF9cQCz6XdkGzwNKjcHCCoIe1qw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
