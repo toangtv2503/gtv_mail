@@ -30,6 +30,11 @@ jobs:
         run: flutter build apk --release --split-per-abi
         continue-on-error: true
 
+      - name: Install CocoaPods dependencies
+        run: |
+          cd ios
+          pod install
+
       # iOS release build
       - name: Build iOS Release IPA
         run: |
