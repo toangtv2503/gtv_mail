@@ -354,6 +354,7 @@
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Profile;
+			BASE_CONFIGURATION_REFERENCE = "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig";
 		};
 		249021D4217E4FDB00AE95B9 /* Profile */ = {
 			isa = XCBuildConfiguration;
@@ -375,6 +376,7 @@
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Profile;
+			BASE_CONFIGURATION_REFERENCE = "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig";
 		};
 		331C8088294A63A400263BE5 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -392,6 +394,7 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
 			};
 			name = Debug;
+			BASE_CONFIGURATION_REFERENCE = "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig";
 		};
 		331C8089294A63A400263BE5 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -407,6 +410,7 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
 			};
 			name = Release;
+			BASE_CONFIGURATION_REFERENCE = "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig";
 		};
 		331C808A294A63A400263BE5 /* Profile */ = {
 			isa = XCBuildConfiguration;
@@ -422,6 +426,7 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
 			};
 			name = Profile;
+			BASE_CONFIGURATION_REFERENCE = "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig";
 		};
 		97C147031CF9000F007C117D /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -479,6 +484,7 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
+			BASE_CONFIGURATION_REFERENCE = "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig";
 		};
 		97C147041CF9000F007C117D /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -533,6 +539,7 @@
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
+			BASE_CONFIGURATION_REFERENCE = "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig";
 		};
 		97C147061CF9000F007C117D /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -555,6 +562,7 @@
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
+			BASE_CONFIGURATION_REFERENCE = "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig";
 		};
 		97C147071CF9000F007C117D /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -576,6 +584,7 @@
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
+			BASE_CONFIGURATION_REFERENCE = "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig";
 		};
 /* End XCBuildConfiguration section */
 
