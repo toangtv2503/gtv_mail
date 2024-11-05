@@ -26,7 +26,7 @@ jobs:
       - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.3"  # Replace with your Flutter version if needed
+          flutter-version: "3.24.3"  
 
       - name: Install dependencies
         run: flutter pub get
@@ -54,8 +54,6 @@ jobs:
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v3
-        with:
-          name: github-pages
 
       - name: Deploy to GitHub Pages
         id: deployment
