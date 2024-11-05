@@ -34,6 +34,11 @@ jobs:
       - name: Build Flutter web
         run: flutter build web --release --web-renderer html
 
+      - name: List files in build/web directory
+        run: |
+          echo "Listing contents of build/web:"
+          ls -R build/web
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
