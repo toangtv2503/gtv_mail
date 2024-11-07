@@ -1,11 +1,17 @@
 import 'package:bcrypt/bcrypt.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:country_flags/country_flags.dart';
+import 'package:country_phone_validator/country_phone_validator.dart';
+
+import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gtv_mail/models/user.dart';
+import 'package:gtv_mail/utils/country_codes.dart';
 import 'package:gtv_mail/utils/otp_dialog.dart';
-import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+
 
 class RegisterForm extends StatefulWidget {
   const RegisterForm({super.key});
@@ -20,13 +26,31 @@ class _RegisterFormState extends State<RegisterForm> {
   String? phoneNumber;
   String? password;
   String? confirmPassword;
+  String? email;
 
-  var _verificationId;
+  String isoCode = "VN";
+  String dialCode = "+84";
+  int? currentIndex;
+
+
+  @override
+  void initState() {
+    currentIndex = MyCountry.countries.indexWhere((country) => country.isoCode == isoCode);
+    super.initState();
+  }
 
   Future<bool> _checkPhoneNumberExists(String phone) async {
     final QuerySnapshot snapshot = await FirebaseFirestore.instance
         .collection('users')
         .where('phone', isEqualTo: phone)
+        .get();
+    return snapshot.docs.isNotEmpty;
+  }
+
+  Future<bool> _checkEmailExisted(String email) async {
+    final QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('email', isEqualTo: email)
         .get();
     return snapshot.docs.isNotEmpty;
   }
@@ -52,6 +76,63 @@ class _RegisterFormState extends State<RegisterForm> {
     );
   }
 
+  void _showEmailExistsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Email Exists'),
+          content: const Text(
+              'Your email address already exists. Please use a different email address.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showCountriesModal() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        currentIndex = MyCountry.countries.indexWhere((country) => country.isoCode == isoCode);
+        return ScrollablePositionedList.separated(
+          initialScrollIndex: currentIndex!,
+          itemCount: MyCountry.countries.length,
+          itemBuilder: (context, index) => ListTile(
+            leading: CountryFlag.fromCountryCode(
+              MyCountry.countries[index].isoCode,
+            ),
+            title: Text(MyCountry.countries[index].name),
+            subtitle: Text(MyCountry.countries[index].dialCode),
+            trailing: MyCountry.countries[index].isoCode == isoCode
+                ? const Icon(
+                    Icons.check,
+                    color: Colors.green,
+                  )
+                : null,
+            onTap: () {
+              setState(() {
+                isoCode = MyCountry.countries[index].isoCode;
+                dialCode = MyCountry.countries[index].dialCode;
+              });
+              Navigator.pop(context);
+            },
+          ),
+          separatorBuilder: (context, index) => const Divider(),
+        );
+      },
+    );
+
+
+  }
+
   @override
   Widget build(BuildContext context) {
     return Form(
@@ -71,7 +152,7 @@ class _RegisterFormState extends State<RegisterForm> {
             validator: (value) {
               if (value?.isEmpty ?? true) {
                 return 'Please enter your username';
-              } else if (value!.length < 0 || value.length > 256) {
+              } else if (value!.length > 256) {
                 return 'Your username so long';
               }
               return null;
@@ -81,80 +162,101 @@ class _RegisterFormState extends State<RegisterForm> {
           ),
           const SizedBox(height: 10),
 
-          // Phone Number Field
-          IntlPhoneField(
-            flagsButtonMargin: const EdgeInsets.only(left: 8),
-            showDropdownIcon: false,
-            disableLengthCheck: true,
-            initialCountryCode: "VN",
-            decoration: const InputDecoration(
+          TextFormField(
+            autofocus: true,
+            decoration: InputDecoration(
               labelText: 'Phone Number',
+              prefixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      _showCountriesModal();
+                    },
+                    icon: CountryFlag.fromCountryCode(
+                      isoCode,
+                      height: 15,
+                      width: 20,
+                    ),
+                  ),
+                  Text("$dialCode ")
+                ],
+              ),
             ),
-            languageCode: "vn",
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(10),
-            ],
-            invalidNumberMessage: 'Invalid phone number',
             validator: (value) {
-              if (value?.number.isEmpty ?? true) {
-                return 'Please enter your phone number';
-              } else if (value!.number.length < 9) {
-                return 'Phone number must be at least 9 digits';
-              } else if (!value.number.startsWith('0') &&
-                  value.number.length == 10) {
-                return 'Invalid phone number';
-              } else if (value.number.startsWith('0') &&
-                  value.number.length == 10) {
-                return null;
-              } else if (!value.number.startsWith('0') &&
-                  value.number.length == 9) {
-                return null;
-              } else {
-                return 'Invalid phone number';
+              if (value?.isEmpty ?? true) {
+                return 'Please enter your username';
+              } else if (!CountryUtils.validatePhoneNumber(value!, dialCode)) {
+                return 'Your phone number is invalid';
               }
+              return null;
             },
-            onSaved: (value) {
-              if (value!.number.startsWith('0')) {
-                phoneNumber = value.completeNumber;
-              } else if (value.number.length == 9) {
-                phoneNumber = '+84${value.number}';
-              }
-            },
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(11)
+              ],
+            onSaved: (value) => phoneNumber = "$dialCode$value",
             textInputAction: TextInputAction.next,
+            keyboardType: TextInputType.phone,
           ),
+
           const SizedBox(height: 10),
 
-          // Password Field
           TextFormField(
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              prefixIcon: Icon(Icons.email),
+            ),
+            validator: (value) {
+              if (value?.isEmpty ?? true) {
+                return 'Please enter your email';
+              } else if (value!.length > 256) {
+                return 'Your email so long';
+              } else if (!EmailValidator.validate(value)) {
+                return "Your email is invalid";
+              }
+
+              return null;
+            },
+            onSaved: (value) => email = value,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+          ),
+
+          const SizedBox(height: 10),
+
+          TextFormField(
+            decoration: const InputDecoration(
               labelText: 'Password',
-              prefixIcon: const Icon(Icons.lock),
+              prefixIcon: Icon(Icons.lock),
             ),
             obscureText: true,
             validator: (value) {
               if (value?.isEmpty ?? true) {
                 return 'Please enter your password';
-              } else if (value!.length < 0 || value.length > 256) {
+              } else if (value!.length > 256) {
                 return 'Your password so long';
               }
+              password = value;
               return null;
             },
             onSaved: (value) => password = value,
             textInputAction: TextInputAction.next,
           ),
+
           const SizedBox(height: 10),
 
-          // Confirm Password Field
           TextFormField(
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'Confirm Password',
-              prefixIcon: const Icon(Icons.check),
+              prefixIcon: Icon(Icons.check),
             ),
             obscureText: true,
             validator: (value) {
               if (value?.isEmpty ?? true) {
                 return 'Please confirm your password';
+              } else if (value != password) {
+                return 'Your password does not matched';
               }
               return null;
             },
@@ -163,29 +265,32 @@ class _RegisterFormState extends State<RegisterForm> {
           ),
           const SizedBox(height: 20),
 
-          // Register Button
           ElevatedButton(
             onPressed: () async {
               if (_registerKey.currentState!.validate()) {
                 _registerKey.currentState!.save();
                 bool phoneExists = await _checkPhoneNumberExists(phoneNumber!);
+                bool emailExists = await _checkEmailExisted(email!);
+
                 if (phoneExists) {
                   _showPhoneExistsDialog();
+                } else if (emailExists) {
+                  _showEmailExistsDialog();
                 } else {
-                  var phone = phoneNumber!.length > 12 ? phoneNumber?.replaceFirst("0", '') : phoneNumber;
                   await FirebaseAuth.instance.verifyPhoneNumber(
-                    phoneNumber: phone,
+                    phoneNumber: phoneNumber,
                     verificationCompleted: (_) {},
                     verificationFailed: (FirebaseAuthException e) {
                       showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: Text("Verification Failed"),
-                          content: Text("An error occurred. Please try again after 60s."),
+                          title: const Text("Verification Failed"),
+                          content: const Text(
+                              "Your phone number not support. Please try another one."),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: Text("OK"),
+                              child: const Text("OK"),
                             ),
                           ],
                         ),
@@ -199,36 +304,43 @@ class _RegisterFormState extends State<RegisterForm> {
                       );
 
                       if (credential != null) {
-                        print("$credential neeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+                        UserCredential userCredential = await FirebaseAuth
+                            .instance
+                            .signInWithCredential(credential);
+                        User? user = userCredential.user;
 
+                        if (user != null) {
+                          await user.updatePhotoURL(
+                              "https://firebasestorage.googleapis.com/v0/b/gtv-mail.firebasestorage.app/o/default_assets%2Fuser_avatar_default.png?alt=media&token=7c5f76fb-ce9f-465f-ac75-1e2212c58913");
+                          await user.updateDisplayName(username);
+                          await user.updatePassword(password!);
+                          await user.reload();
 
+                          User currentUser = FirebaseAuth.instance.currentUser!;
 
-                          UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-                          User? user = userCredential.user;
+                          MyUser newUser = MyUser(
+                            uid: currentUser.uid,
+                            name: currentUser.displayName,
+                            phone: currentUser.phoneNumber,
+                            email: email,
+                            imageUrl: currentUser.photoURL,
+                            password: BCrypt.hashpw(
+                                password.toString(), BCrypt.gensalt()),
+                          );
 
-                          if (user != null) {
-                            await user.updatePhotoURL(
-                                "https://firebasestorage.googleapis.com/v0/b/gtv-mail.firebasestorage.app/o/default_assets%2Fuser_avatar_default.png?alt=media&token=7c5f76fb-ce9f-465f-ac75-1e2212c58913");
-                            await user.updateDisplayName(username);
-                            await user.updatePassword(password.toString());
-                            await user.reload();
+                          await FirebaseFirestore.instance
+                              .collection("users")
+                              .doc(currentUser.uid)
+                              .set(newUser.toJson());
 
-                            User currentUser = FirebaseAuth.instance.currentUser!;
-
-                            MyUser newUser = MyUser(
-                              uid: currentUser.uid,
-                              name: currentUser.displayName,
-                              phone: currentUser.phoneNumber,
-                              imageUrl: currentUser.photoURL,
-                              password: BCrypt.hashpw(password.toString(), BCrypt.gensalt()),
-                            );
-
-                            await FirebaseFirestore.instance.collection("users").doc(currentUser.uid).set(newUser.toJson());
-                            Navigator.pop(context, true);
-                          }
+                          Navigator.popUntil(
+                            context,
+                            (route) => route.isFirst,
+                          );
                         }
-                                          },
-                    codeAutoRetrievalTimeout: (verificationId) => _verificationId = verificationId,
+                      }
+                    },
+                    codeAutoRetrievalTimeout: (verificationId) {}
                   );
                 }
               }
