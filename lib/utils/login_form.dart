@@ -28,14 +28,10 @@ class _LoginFormState extends State<LoginForm> {
   bool _isShowPassword = false;
   String? email;
 
-  String isoCode = "VN";
-  String dialCode = "+84";
-  int? currentIndex;
-
+  bool _isLoading = false;
 
   @override
   void initState() {
-    currentIndex = MyCountry.countries.indexWhere((country) => country.isoCode == isoCode);
     super.initState();
   }
 
@@ -133,6 +129,11 @@ class _LoginFormState extends State<LoginForm> {
             onPressed: () async {
               if (_loginKey.currentState!.validate()) {
                 _loginKey.currentState!.save();
+
+                setState(() {
+                  _isLoading = true;
+                });
+
                 MyUser? user = await _checkLogin();
 
                 if (user != null) {
@@ -166,7 +167,7 @@ class _LoginFormState extends State<LoginForm> {
                         await FirebaseAuth.instance
                             .signInWithCredential(credential);
 
-                        Navigator.pop(context, true);
+                        Navigator.pop(context);
                       },
                       codeAutoRetrievalTimeout: (_) {},
                     );
@@ -174,8 +175,13 @@ class _LoginFormState extends State<LoginForm> {
                     signInWithCustomToken(user.uid!);
                     Navigator.pop(context);
                   }
-
+                  setState(() {
+                    _isLoading = false;
+                  });
                 } else {
+                  setState(() {
+                    _isLoading = false;
+                  });
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
@@ -191,7 +197,7 @@ class _LoginFormState extends State<LoginForm> {
                 }
               }
             },
-            child: const Text('Sign In'),
+            child: _isLoading ? const CircularProgressIndicator() : const Text('Sign In'),
           ),
           const SizedBox(height: 10),
         ],

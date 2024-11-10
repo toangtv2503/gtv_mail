@@ -12,7 +12,6 @@ import 'package:gtv_mail/utils/country_codes.dart';
 import 'package:gtv_mail/utils/otp_dialog.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
-
 class RegisterForm extends StatefulWidget {
   const RegisterForm({super.key});
 
@@ -32,10 +31,12 @@ class _RegisterFormState extends State<RegisterForm> {
   String dialCode = "+84";
   int? currentIndex;
 
+  bool _isLoading = false;
 
   @override
   void initState() {
-    currentIndex = MyCountry.countries.indexWhere((country) => country.isoCode == isoCode);
+    currentIndex =
+        MyCountry.countries.indexWhere((country) => country.isoCode == isoCode);
     super.initState();
   }
 
@@ -101,7 +102,8 @@ class _RegisterFormState extends State<RegisterForm> {
     showModalBottomSheet(
       context: context,
       builder: (context) {
-        currentIndex = MyCountry.countries.indexWhere((country) => country.isoCode == isoCode);
+        currentIndex = MyCountry.countries
+            .indexWhere((country) => country.isoCode == isoCode);
         return ScrollablePositionedList.separated(
           initialScrollIndex: currentIndex!,
           itemCount: MyCountry.countries.length,
@@ -129,8 +131,6 @@ class _RegisterFormState extends State<RegisterForm> {
         );
       },
     );
-
-
   }
 
   @override
@@ -142,7 +142,6 @@ class _RegisterFormState extends State<RegisterForm> {
         children: [
           Text('Register', style: Theme.of(context).textTheme.displaySmall),
           const SizedBox(height: 20),
-
           TextFormField(
             autofocus: true,
             decoration: const InputDecoration(
@@ -161,7 +160,6 @@ class _RegisterFormState extends State<RegisterForm> {
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 10),
-
           TextFormField(
             autofocus: true,
             decoration: InputDecoration(
@@ -191,17 +189,15 @@ class _RegisterFormState extends State<RegisterForm> {
               }
               return null;
             },
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(11)
-              ],
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(11)
+            ],
             onSaved: (value) => phoneNumber = "$dialCode$value",
             textInputAction: TextInputAction.next,
             keyboardType: TextInputType.phone,
           ),
-
           const SizedBox(height: 10),
-
           TextFormField(
             decoration: const InputDecoration(
               labelText: 'Email',
@@ -222,9 +218,7 @@ class _RegisterFormState extends State<RegisterForm> {
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
           ),
-
           const SizedBox(height: 10),
-
           TextFormField(
             decoration: const InputDecoration(
               labelText: 'Password',
@@ -243,9 +237,7 @@ class _RegisterFormState extends State<RegisterForm> {
             onSaved: (value) => password = value,
             textInputAction: TextInputAction.next,
           ),
-
           const SizedBox(height: 10),
-
           TextFormField(
             decoration: const InputDecoration(
               labelText: 'Confirm Password',
@@ -264,18 +256,28 @@ class _RegisterFormState extends State<RegisterForm> {
             textInputAction: TextInputAction.done,
           ),
           const SizedBox(height: 20),
-
           ElevatedButton(
             onPressed: () async {
               if (_registerKey.currentState!.validate()) {
                 _registerKey.currentState!.save();
+
+                setState(() {
+                  _isLoading = true;
+                });
+
                 bool phoneExists = await _checkPhoneNumberExists(phoneNumber!);
                 bool emailExists = await _checkEmailExisted(email!);
 
                 if (phoneExists) {
                   _showPhoneExistsDialog();
+                  setState(() {
+                    _isLoading = false;
+                  });
                 } else if (emailExists) {
                   _showEmailExistsDialog();
+                  setState(() {
+                    _isLoading = false;
+                  });
                 } else {
                   await FirebaseAuth.instance.verifyPhoneNumber(
                     phoneNumber: phoneNumber,
@@ -304,48 +306,75 @@ class _RegisterFormState extends State<RegisterForm> {
                       );
 
                       if (credential != null) {
-                        UserCredential userCredential = await FirebaseAuth
-                            .instance
-                            .signInWithCredential(credential);
-                        User? user = userCredential.user;
-
-                        if (user != null) {
-                          await user.updatePhotoURL(
-                              "https://firebasestorage.googleapis.com/v0/b/gtv-mail.firebasestorage.app/o/default_assets%2Fuser_avatar_default.png?alt=media&token=7c5f76fb-ce9f-465f-ac75-1e2212c58913");
-                          await user.updateDisplayName(username);
-                          await user.updatePassword(password!);
-                          await user.reload();
-
-                          User currentUser = FirebaseAuth.instance.currentUser!;
-
-                          MyUser newUser = MyUser(
-                            uid: currentUser.uid,
-                            name: currentUser.displayName,
-                            phone: currentUser.phoneNumber,
-                            email: email,
-                            imageUrl: currentUser.photoURL,
-                            password: BCrypt.hashpw(
-                                password.toString(), BCrypt.gensalt()),
-                          );
-
-                          await FirebaseFirestore.instance
-                              .collection("users")
-                              .doc(currentUser.uid)
-                              .set(newUser.toJson());
+                        try {
+                          UserCredential userCredential = await FirebaseAuth
+                              .instance
+                              .signInWithCredential(credential);
+                          User? user = userCredential.user;
 
                           Navigator.popUntil(
-                            context,
-                            (route) => route.isFirst,
+                              context, (route) => route.isFirst);
+
+                          setState(() {
+                            _isLoading = false;
+                          });
+
+                          if (user != null) {
+                            await user.updatePhotoURL(
+                                "https://firebasestorage.googleapis.com/v0/b/gtv-mail.firebasestorage.app/o/default_assets%2Fuser_avatar_default.png?alt=media&token=7c5f76fb-ce9f-465f-ac75-1e2212c58913");
+                            await user.updateDisplayName(username);
+                            await user.updatePassword(password!);
+                            await user.reload();
+
+                            User currentUser =
+                                FirebaseAuth.instance.currentUser!;
+
+                            MyUser newUser = MyUser(
+                                uid: currentUser.uid,
+                                name: currentUser.displayName,
+                                phone: currentUser.phoneNumber,
+                                email: email,
+                                imageUrl: currentUser.photoURL,
+                                password: BCrypt.hashpw(
+                                    password.toString(), BCrypt.gensalt()));
+
+                            await FirebaseFirestore.instance
+                                .collection("users")
+                                .doc(currentUser.uid)
+                                .set(newUser.toJson());
+                          }
+                        } catch (e) {
+
+                          setState(() {
+                            _isLoading = false;
+                          });
+
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text("Verification Failed"),
+                              content:
+                                  const Text("Your OTP code is wrong."),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text("OK"),
+                                ),
+                              ],
+                            ),
                           );
                         }
                       }
                     },
-                    codeAutoRetrievalTimeout: (verificationId) {}
+                    codeAutoRetrievalTimeout: (verificationId) {},
                   );
+                  setState(() {
+                    _isLoading = false;
+                  });
                 }
-              }
+                              }
             },
-            child: const Text('Register'),
+            child: _isLoading ? const CircularProgressIndicator() : const Text('Register'),
           ),
           const SizedBox(height: 10),
         ],
