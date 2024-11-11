@@ -9,7 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:gtv_mail/utils/country_codes.dart';
-import 'package:gtv_mail/utils/otp_dialog.dart';
+import 'package:gtv_mail/components/otp_dialog.dart';
+import 'package:lottie/lottie.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class RegisterForm extends StatefulWidget {
@@ -67,7 +68,7 @@ class _RegisterFormState extends State<RegisterForm> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.pop(context);
               },
               child: const Text('OK'),
             ),
@@ -88,7 +89,7 @@ class _RegisterFormState extends State<RegisterForm> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.pop(context);
               },
               child: const Text('OK'),
             ),
@@ -312,8 +313,7 @@ class _RegisterFormState extends State<RegisterForm> {
                               .signInWithCredential(credential);
                           User? user = userCredential.user;
 
-                          Navigator.popUntil(
-                              context, (route) => route.isFirst);
+                          Navigator.popUntil(context, (route) => route.isFirst);
 
                           setState(() {
                             _isLoading = false;
@@ -344,7 +344,6 @@ class _RegisterFormState extends State<RegisterForm> {
                                 .set(newUser.toJson());
                           }
                         } catch (e) {
-
                           setState(() {
                             _isLoading = false;
                           });
@@ -353,8 +352,7 @@ class _RegisterFormState extends State<RegisterForm> {
                             context: context,
                             builder: (context) => AlertDialog(
                               title: const Text("Verification Failed"),
-                              content:
-                                  const Text("Your OTP code is wrong."),
+                              content: const Text("Your OTP code is wrong."),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
@@ -372,9 +370,14 @@ class _RegisterFormState extends State<RegisterForm> {
                     _isLoading = false;
                   });
                 }
-                              }
+              }
             },
-            child: _isLoading ? const CircularProgressIndicator() : const Text('Register'),
+            child: _isLoading
+                ? Lottie.asset(
+                    'assets/lottiefiles/circle_loading.json',
+                    fit: BoxFit.fill,
+                  )
+                : const Text('Register'),
           ),
           const SizedBox(height: 10),
         ],

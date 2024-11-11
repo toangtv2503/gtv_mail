@@ -2,16 +2,13 @@ import 'dart:convert';
 
 import 'package:bcrypt/bcrypt.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:country_flags/country_flags.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:http/http.dart' as http;
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-
-import 'country_codes.dart';
+import 'package:lottie/lottie.dart';
 import 'otp_dialog.dart';
 
 class LoginForm extends StatefulWidget {
@@ -45,7 +42,7 @@ class _LoginFormState extends State<LoginForm> {
       if (BCrypt.checkpw(password!, user['password'])) {
         return MyUser.fromJson(user);
       }
-        return null;
+      return null;
     } else {
       return null;
     }
@@ -54,12 +51,14 @@ class _LoginFormState extends State<LoginForm> {
   Future<void> signInWithCustomToken(String uid) async {
     try {
       // final response = await http.get(Uri.parse('https://us-central1-gtv-mail.cloudfunctions.net/generateCustomToken?uid=$uid'));
-      final response = await http.get(Uri.parse('http://10.0.2.2:5001/gtv-mail/us-central1/generateCustomToken?uid=$uid'));
+      final response = await http.get(Uri.parse(
+          'http://10.0.2.2:5001/gtv-mail/us-central1/generateCustomToken?uid=$uid'));
 
       if (response.statusCode == 200) {
         final customToken = json.decode(response.body)['customToken'];
 
-        UserCredential userCredential = await FirebaseAuth.instance.signInWithCustomToken(customToken);
+        UserCredential userCredential =
+            await FirebaseAuth.instance.signInWithCustomToken(customToken);
 
         print("Successfully signed in with UID: ${userCredential.user?.uid}");
       } else {
@@ -147,7 +146,8 @@ class _LoginFormState extends State<LoginForm> {
                           context: context,
                           builder: (context) => AlertDialog(
                             title: const Text("Verification Failed"),
-                            content: const Text("An error occurred. Please try again."),
+                            content: const Text(
+                                "An error occurred. Please try again."),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
@@ -157,7 +157,8 @@ class _LoginFormState extends State<LoginForm> {
                           ),
                         );
                       },
-                      codeSent: (String verificationId, int? resendToken) async {
+                      codeSent:
+                          (String verificationId, int? resendToken) async {
                         var credential = await showDialog(
                           context: context,
                           builder: (context) =>
@@ -197,7 +198,12 @@ class _LoginFormState extends State<LoginForm> {
                 }
               }
             },
-            child: _isLoading ? const CircularProgressIndicator() : const Text('Sign In'),
+            child: _isLoading
+                ? Lottie.asset(
+                    'assets/lottiefiles/circle_loading.json',
+                    fit: BoxFit.fill,
+                  )
+                : const Text('Sign In'),
           ),
           const SizedBox(height: 10),
         ],

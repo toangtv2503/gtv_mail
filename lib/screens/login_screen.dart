@@ -1,8 +1,6 @@
-
 import 'package:flutter/material.dart';
-import 'package:gtv_mail/utils/app_theme.dart';
-import 'package:gtv_mail/utils/login_form.dart';
-import 'package:gtv_mail/utils/register_form.dart';
+import 'package:gtv_mail/components/login_form.dart';
+import 'package:gtv_mail/components/register_form.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,7 +10,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-
   void _handleSignIn(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -29,8 +26,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _handleSignUp(BuildContext context) async{
-    var result = await showModalBottomSheet(
+  void _handleSignUp(BuildContext context) {
+    showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) => SingleChildScrollView(
@@ -43,14 +40,6 @@ class _LoginScreenState extends State<LoginScreen> {
         child: const RegisterForm(),
       ),
     );
-
-    if (result != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Register successful!'),
-        backgroundColor: AppTheme.greenColor,
-      ));
-    }
-
   }
 
   @override
