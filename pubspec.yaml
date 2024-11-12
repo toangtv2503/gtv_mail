@@ -53,6 +53,8 @@ dependencies:
   go_router: ^14.4.1
   sliver_app_bar_builder: ^1.1.0
   cached_network_image: ^3.4.1
+  flutter_quill: ^10.8.5
+  flutter_tags: ^1.0.0-nullsafety.1
 
 dev_dependencies:
   flutter_test:

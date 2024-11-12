@@ -30,7 +30,6 @@ class _CustomAppbarState extends State<CustomAppbar> {
                 onTap: () {},
                 child: CircleAvatar(
                   child: CachedNetworkImage(
-                    fit: BoxFit.fill,
                     imageUrl: FirebaseAuth.instance.currentUser!.photoURL!,
                     imageBuilder: (context, imageProvider) => Container(
                       decoration: BoxDecoration(
@@ -69,6 +68,7 @@ class _CustomAppbarState extends State<CustomAppbar> {
                     border: UnderlineInputBorder(),
                     hintText: "Search In Mail",
                   ),
+                  maxLines: 1,
                 ),
               ),
             ),
@@ -76,37 +76,71 @@ class _CustomAppbarState extends State<CustomAppbar> {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  color: Colors.red,
-                  height: 400,
-                )),
+            padding:
+                const EdgeInsets.only(left: 16, top: 16),
+            child: Text(
+              "Primary",
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
           ),
         ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  color: Colors.red,
-                  height: 400,
-                )),
+        SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              return ListTile(
+                onTap: () {},
+                leading: CircleAvatar(
+                  child: CachedNetworkImage(
+                    imageUrl: FirebaseAuth.instance.currentUser!.photoURL!,
+                    imageBuilder: (context, imageProvider) => Container(
+                      decoration: BoxDecoration(
+                        image: DecorationImage(image: imageProvider),
+                      ),
+                    ),
+                    placeholder: (context, url) => Lottie.asset(
+                      'assets/lottiefiles/circle_loading.json',
+                      fit: BoxFit.fill,
+                    ),
+                    errorWidget: (context, url, error) =>
+                        const Icon(Icons.error),
+                  ),
+                ),
+                title: Text(
+                  "Ten mail",
+                  style: Theme.of(context).textTheme.titleMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  "noi dung cua mail",
+                  style: Theme.of(context).textTheme.titleSmall,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: SizedBox(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Text(
+                        "11 thg 11",
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      IconButton(
+                        onPressed: () {},
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(
+                          Icons.star_border_outlined,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            childCount: 20,
           ),
         ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  color: Colors.red,
-                  height: 400,
-                )),
-          ),
-        )
       ],
     );
   }

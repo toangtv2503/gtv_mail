@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gtv_mail/components/login_form.dart';
 import 'package:gtv_mail/components/register_form.dart';
+import 'package:lottie/lottie.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,30 +50,60 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
         children: [
           const SizedBox(
-            height: 156,
+            height: 32,
           ),
-          const Row(),
-          ClipOval(
-            child: Image.asset(
-              "assets/images/logo.png",
-              height: 154,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ClipOval(
+                child: Image.asset(
+                  "assets/images/logo.png",
+                  height: 42,
+                ),
+              ),
+              const SizedBox(
+                width: 10,
+              ),
+              Text(
+                "GTV Mail",
+                style: Theme.of(context).textTheme.displayMedium,
+              ),
+            ],
+          ),
+          Expanded(
+            flex: 1,
+            child: Container(),
+          ),
+          SizedBox(
+            width: 400,
+            child: Lottie.asset(
+              'assets/lottiefiles/welcome.json',
+              fit: BoxFit.fill,
+            ),
+          ),
+          Text("Send and manage your mails effortlessly.",
+              style: Theme.of(context).textTheme.displaySmall,
+              textAlign: TextAlign.center),
+          Expanded(
+            flex: 1,
+            child: Container(),
+          ),
+          SizedBox(
+            width: 300,
+            child: ElevatedButton(
+              onPressed: () => _handleSignIn(context),
+              child: const Text("Login"),
             ),
           ),
           const SizedBox(
-            height: 32,
+            height: 10,
           ),
-          Text(
-            "GTV Mail",
-            style: Theme.of(context).textTheme.displayMedium,
-          ),
-          const Spacer(),
-          TextButton(
-            onPressed: () => _handleSignIn(context),
-            child: const Text("Đăng nhập"),
-          ),
-          TextButton(
-            onPressed: () => _handleSignUp(context),
-            child: const Text("Đăng ký"),
+          SizedBox(
+            width: 300,
+            child: ElevatedButton(
+              onPressed: () => _handleSignUp(context),
+              child: const Text("Register"),
+            ),
           ),
           const SizedBox(
             height: 32,

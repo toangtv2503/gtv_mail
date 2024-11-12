@@ -33,7 +33,7 @@ class NotFoundScreen extends StatelessWidget {
             width: 250,
             child: ElevatedButton(
                 onPressed: () {
-                  GoRouter.of(context).go('/');
+                  context.goNamed("home");
                 },
                 child: const Text("Home")),
           )

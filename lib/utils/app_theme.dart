@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AppTheme {
   // Light Theme Colors
   static const appBackgroundColorLight = Color(0xFFFFFFFF);
-  static const colorPrimaryLight = Color(0xFFFFFFFF);
+  static const colorPrimaryLight = Colors.white60;
   static const iconColorPrimaryLight = Color(0xFF3D4043);
   static const textColorLight = Color(0xFF202124);
 
@@ -25,6 +25,9 @@ class AppTheme {
 
   // Light Theme Data
   static ThemeData lightTheme = ThemeData(
+    listTileTheme: const ListTileThemeData(
+      iconColor: iconColorPrimaryLight
+    ),
     inputDecorationTheme: const InputDecorationTheme(
       border: OutlineInputBorder(),
       prefixIconColor: iconColorPrimaryLight,
@@ -49,7 +52,7 @@ class AppTheme {
     textTheme: const TextTheme(
       displayLarge: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: textColorLight),
       displayMedium: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: textColorLight),
-      displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w500, color: textColorLight),
+      displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColorLight),
       headlineLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColorLight),
       headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: textColorLight),
       headlineSmall: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: textColorLight),
@@ -68,16 +71,6 @@ class AppTheme {
       iconTheme: IconThemeData(color: iconColorPrimaryLight),
     ),
     iconTheme: const IconThemeData(color: iconColorPrimaryLight),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        side: const BorderSide(
-          width: 0.8,
-          color: greyColor,
-        ),
-        fixedSize: const Size(128, 32),
-        textStyle: const TextStyle(color: blueColor)
-      ),
-    ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
       backgroundColor: whiteColor,
       foregroundColor: textColorLight,
@@ -87,6 +80,9 @@ class AppTheme {
 
   // Dark Theme Data
   static ThemeData darkTheme = ThemeData(
+    listTileTheme: const ListTileThemeData(
+        iconColor: iconColorPrimaryDark
+    ),
     inputDecorationTheme: const InputDecorationTheme(
       border: OutlineInputBorder(),
       prefixIconColor: iconColorPrimaryDark,
@@ -111,7 +107,7 @@ class AppTheme {
     textTheme: const TextTheme(
       displayLarge: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: textColorDark),
       displayMedium: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: textColorDark),
-      displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w500, color: textColorDark),
+      displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColorDark),
       headlineLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColorDark),
       headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: textColorDark),
       headlineSmall: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: textColorDark),
@@ -130,16 +126,6 @@ class AppTheme {
       iconTheme: IconThemeData(color: iconColorPrimaryDark),
     ),
     iconTheme: const IconThemeData(color: iconColorPrimaryLight),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-          side: const BorderSide(
-            width: 0.8,
-            color: whiteColor,
-          ),
-          fixedSize: const Size(128, 32),
-          textStyle: const TextStyle(color: blueColor)
-      ),
-    ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
       backgroundColor: colorPrimaryDark,
       foregroundColor: textColorDark,

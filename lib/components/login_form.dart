@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gtv_mail/models/user.dart';
+import 'package:gtv_mail/utils/shared_preferences_util.dart';
 import 'package:http/http.dart' as http;
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -167,6 +168,8 @@ class _LoginFormState extends State<LoginForm> {
 
                         await FirebaseAuth.instance
                             .signInWithCredential(credential);
+
+                        await SharedPreferencesUtil.setString('email', email!);
 
                         Navigator.pop(context);
                       },

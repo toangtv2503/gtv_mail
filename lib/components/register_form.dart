@@ -13,6 +13,8 @@ import 'package:gtv_mail/components/otp_dialog.dart';
 import 'package:lottie/lottie.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+import '../utils/shared_preferences_util.dart';
+
 class RegisterForm extends StatefulWidget {
   const RegisterForm({super.key});
 
@@ -342,6 +344,8 @@ class _RegisterFormState extends State<RegisterForm> {
                                 .collection("users")
                                 .doc(currentUser.uid)
                                 .set(newUser.toJson());
+
+                            await SharedPreferencesUtil.setString('email', email!);
                           }
                         } catch (e) {
                           setState(() {
