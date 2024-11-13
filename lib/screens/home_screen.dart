@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:gtv_mail/components/custom_appbar.dart';
 import 'package:gtv_mail/components/custom_drawer.dart';
 
-import '../utils/shared_preferences_util.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,8 +14,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
 
   _handleComposeMail() async {
-    String? email = await SharedPreferencesUtil.getString('email');
-    context.goNamed('compose', queryParameters: {'draft': 'new'}, extra: email);
+    context.pushNamed('compose', queryParameters: {'draft': 'new'});
   }
 
   @override

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ComposeMail extends StatefulWidget {
-  ComposeMail({super.key, this.isDraft = true, this.draftId, required this.from});
+  ComposeMail({super.key, this.isDraft = true, this.draftId});
   bool? isDraft;
   String? draftId;
-  String? from;
 
   @override
   State<ComposeMail> createState() => _ComposeMailState();
@@ -14,11 +13,35 @@ class ComposeMail extends StatefulWidget {
 
 class _ComposeMailState extends State<ComposeMail> {
   final QuillController _controller = QuillController.basic();
+  late SharedPreferences prefs;
+  final TextEditingController _fromController = TextEditingController();
+
+  void init() async {
+    prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _fromController.text = prefs.getString('email') ?? '';
+    });
+  }
+
+  @override
+  void initState() {
+    init();
+    super.initState();
+  }
 
   @override
   void dispose() {
     _controller.dispose();
+    _fromController.dispose();
     super.dispose();
+  }
+
+  void _handleAttachment() {
+
+  }
+
+  void _handleSend() {
+
   }
 
   @override
@@ -27,9 +50,14 @@ class _ComposeMailState extends State<ComposeMail> {
       appBar: AppBar(
         leading: IconButton(
             onPressed: () {
-              GoRouter.of(context).goNamed('home');
+              Navigator.pop(context);
             },
             icon: const Icon(Icons.close)),
+        actions: [
+          IconButton(onPressed: _handleAttachment, icon: const Icon(Icons.attachment)),
+          IconButton(onPressed: _handleSend, icon: const Icon(Icons.send_outlined)),
+          IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz))
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -41,7 +69,7 @@ class _ComposeMailState extends State<ComposeMail> {
                 border: UnderlineInputBorder(),
                 prefixText: "From ",
               ),
-              initialValue: widget.from,
+              controller: _fromController,
             ),
             const SizedBox(
               height: 8,

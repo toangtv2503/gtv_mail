@@ -90,6 +90,12 @@ class _OtpDialogState extends State<OtpDialog> {
       ),
       actions: [
         TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: const Text('Cancel'),
+        ),
+        TextButton(
           onPressed: () async {
             if (_key.currentState!.validate()) {
               _key.currentState!.save();
@@ -101,13 +107,7 @@ class _OtpDialogState extends State<OtpDialog> {
               Navigator.pop(context, credential);
             }
           },
-          child: Text('Verify'),
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: Text('Cancel'),
+          child: const Text('Verify'),
         ),
       ],
     );

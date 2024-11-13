@@ -3,13 +3,13 @@ import 'dart:convert';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gtv_mail/models/user.dart';
-import 'package:gtv_mail/utils/shared_preferences_util.dart';
 import 'package:http/http.dart' as http;
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'otp_dialog.dart';
 
 class LoginForm extends StatefulWidget {
@@ -137,6 +137,7 @@ class _LoginFormState extends State<LoginForm> {
                 MyUser? user = await _checkLogin();
 
                 if (user != null) {
+                  var prefs = await SharedPreferences.getInstance();
                   if (user.isEnable2FA) {
                     await FirebaseAuth.instance.verifyPhoneNumber(
                       phoneNumber: user.phone,
@@ -169,14 +170,15 @@ class _LoginFormState extends State<LoginForm> {
                         await FirebaseAuth.instance
                             .signInWithCredential(credential);
 
-                        await SharedPreferencesUtil.setString('email', email!);
 
+                        prefs.setString('email', email!);
                         Navigator.pop(context);
                       },
                       codeAutoRetrievalTimeout: (_) {},
                     );
                   } else {
                     signInWithCustomToken(user.uid!);
+                    prefs.setString('email', email!);
                     Navigator.pop(context);
                   }
                   setState(() {

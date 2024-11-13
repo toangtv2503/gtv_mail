@@ -5,6 +5,8 @@ class Mail {
   String? uid;
   String? from;
   String? to;
+  List<String?> cc;
+  List<String?> bcc;
   String? subject;
   Document? body;
   DateTime? sentDate;
@@ -22,6 +24,8 @@ class Mail {
     this.uid,
     this.from,
     this.to,
+    this.cc = const [],
+    this.bcc = const [],
     this.subject,
     this.body,
     this.sentDate,
@@ -41,6 +45,8 @@ class Mail {
       'uid': uid,
       'from': from,
       'to': to,
+      'cc': cc,
+      'bcc': bcc,
       'subject': subject,
       'body': body?.toDelta().toJson(),
       'sentDate': sentDate?.toIso8601String(),
@@ -61,6 +67,8 @@ class Mail {
       uid: json['uid'] ?? 'Default Mail UID',
       from: json['from'] ?? 'Unknown Sender',
       to: json['to'],
+      cc: List<String>.from(json['cc'] ?? []),
+      bcc: List<String>.from(json['bcc'] ?? []),
       subject: json['subject'] ?? 'No Subject',
       body: json['body'] != null
           ? Document.fromJson(json['body'])

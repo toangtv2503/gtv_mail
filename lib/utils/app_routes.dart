@@ -10,6 +10,16 @@ final GoRouter appRouter = GoRouter(
   errorBuilder: (BuildContext context, GoRouterState state) {
     return NotFoundScreen(url: state.uri.path,);
   },
+  redirect: (context, state) {
+    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
+    final isLoggingIn = state.matchedLocation == '/';
+
+    if (isLoggedIn && isLoggingIn) {
+      return '/';
+    }
+
+    return null;
+  },
   routes: <RouteBase>[
     GoRoute(
       name: 'home',
@@ -32,13 +42,12 @@ final GoRouter appRouter = GoRouter(
       path: '/compose',
       builder: (BuildContext context, GoRouterState state) {
         final draftParam = state.uri.queryParameters['draft'];
-        final email = state.extra as String?;
         if (draftParam == 'new') {
-          return ComposeMail(isDraft: false, from: email,);
+          return ComposeMail(isDraft: false);
         } else if (draftParam != null) {
-          return ComposeMail(draftId: draftParam, from: email,);
+          return ComposeMail(draftId: draftParam);
         } else {
-          return ComposeMail(isDraft: false, from: email,);
+          return ComposeMail(isDraft: false);
         }
       },
     ),

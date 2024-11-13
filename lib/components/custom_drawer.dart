@@ -2,9 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-
-import '../utils/app_theme.dart';
-import '../utils/shared_preferences_util.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({super.key});
@@ -14,6 +12,22 @@ class CustomDrawer extends StatefulWidget {
 }
 
 class _CustomDrawerState extends State<CustomDrawer> {
+  late String email ='';
+  late SharedPreferences prefs;
+
+  void init() async {
+    prefs = await SharedPreferences.getInstance();
+    setState(() {
+      email = prefs.getString('email') ?? '';
+    });
+  }
+
+  @override
+  void initState() {
+    init();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -35,8 +49,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 errorWidget: (context, url, error) => const Icon(Icons.error),
               ),
             ),
-            accountName: Text("ToanGTV"),
-            accountEmail: Text("email@gmail.com"),
+            accountName: Text(FirebaseAuth.instance.currentUser!.displayName!),
+            accountEmail: Text(email!),
           ),
           ListTile(
             leading: Icon(Icons.all_inbox),
@@ -142,7 +156,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
             leading: Icon(Icons.logout),
             title: Text("Logout"),
             onTap: () async {
-              await SharedPreferencesUtil.remove('email');
+              var prefs = await SharedPreferences.getInstance();
+              prefs.remove('email');
               FirebaseAuth.instance.signOut();
             },
           ),

@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:gtv_mail/utils/app_routes.dart';
 import 'package:gtv_mail/utils/app_theme.dart';
-import 'package:gtv_mail/utils/shared_preferences_util.dart';
 import 'firebase_options.dart';
 
 void main() async{
@@ -20,8 +19,6 @@ void main() async{
   );
 
   usePathUrlStrategy();
-
-  await SharedPreferencesUtil.getInstance();
 
   runApp(const MyApp());
 }
