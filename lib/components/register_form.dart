@@ -7,7 +7,9 @@ import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gtv_mail/models/user.dart';
+import 'package:gtv_mail/screens/compose_mail.dart';
 import 'package:gtv_mail/utils/country_codes.dart';
 import 'package:gtv_mail/components/otp_dialog.dart';
 import 'package:lottie/lottie.dart';
@@ -315,37 +317,26 @@ class _RegisterFormState extends State<RegisterForm> {
                               .signInWithCredential(credential);
                           User? user = userCredential.user;
 
-                          Navigator.popUntil(context, (route) => route.isFirst);
-
-                          setState(() {
-                            _isLoading = false;
-                          });
-
+                          await user!.updatePhotoURL('https://firebasestorage.googleapis.com/v0/b/gtv-mail.firebasestorage.app/o/default_assets%2Fuser_avatar_default.png?alt=media&token=7c5f76fb-ce9f-465f-ac75-1e2212c58913');
+                          await user!.updateDisplayName(username);
                           if (user != null) {
-                            await user.updatePhotoURL(
-                                "https://firebasestorage.googleapis.com/v0/b/gtv-mail.firebasestorage.app/o/default_assets%2Fuser_avatar_default.png?alt=media&token=7c5f76fb-ce9f-465f-ac75-1e2212c58913");
-                            await user.updateDisplayName(username);
-                            await user.updatePassword(password!);
-                            await user.reload();
-
-                            User currentUser =
-                                FirebaseAuth.instance.currentUser!;
-
                             MyUser newUser = MyUser(
-                                uid: currentUser.uid,
-                                name: currentUser.displayName,
-                                phone: currentUser.phoneNumber,
+                                uid: user.uid,
+                                name: username,
+                                phone: user.phoneNumber,
                                 email: email,
-                                imageUrl: currentUser.photoURL,
+                                imageUrl: 'https://firebasestorage.googleapis.com/v0/b/gtv-mail.firebasestorage.app/o/default_assets%2Fuser_avatar_default.png?alt=media&token=7c5f76fb-ce9f-465f-ac75-1e2212c58913',
                                 password: BCrypt.hashpw(
                                     password.toString(), BCrypt.gensalt()));
 
                             await FirebaseFirestore.instance
                                 .collection("users")
-                                .doc(currentUser.uid)
+                                .doc(user.uid)
                                 .set(newUser.toJson());
 
                             await SharedPreferencesUtil.setString('email', email!);
+
+                            user.reload().then((_) => context.pushNamed('home'),);
                           }
                         } catch (e) {
                           setState(() {
@@ -370,9 +361,6 @@ class _RegisterFormState extends State<RegisterForm> {
                     },
                     codeAutoRetrievalTimeout: (verificationId) {},
                   );
-                  setState(() {
-                    _isLoading = false;
-                  });
                 }
               }
             },
