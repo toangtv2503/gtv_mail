@@ -55,6 +55,7 @@ dependencies:
   cached_network_image: ^3.4.1
   flutter_quill: ^10.8.5
   flutter_tags: ^1.0.0-nullsafety.1
+  textfield_tags: ^3.0.1
 
 dev_dependencies:
   flutter_test:
