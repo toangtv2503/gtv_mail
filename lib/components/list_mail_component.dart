@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:gtv_mail/services/user_service.dart';
 import 'package:lottie/lottie.dart';
 
 class ListMailComponent extends StatefulWidget {
@@ -20,7 +21,7 @@ class _ListMailComponentState extends State<ListMailComponent> {
             onTap: () {},
             leading: CircleAvatar(
               child: CachedNetworkImage(
-                imageUrl: FirebaseAuth.instance.currentUser!.photoURL!,
+                imageUrl: userService.getCurrentUser()!.photoURL!,
                 imageBuilder: (context, imageProvider) => Container(
                   decoration: BoxDecoration(
                     image: DecorationImage(image: imageProvider),

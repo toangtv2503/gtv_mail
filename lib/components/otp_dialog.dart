@@ -46,6 +46,18 @@ class _OtpDialogState extends State<OtpDialog> {
     });
   }
 
+  void _handleVerify() async {
+    if (_key.currentState!.validate()) {
+      _key.currentState!.save();
+      PhoneAuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: widget.verificationId,
+        smsCode: _otp!,
+      );
+
+      Navigator.pop(context, credential);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -96,17 +108,7 @@ class _OtpDialogState extends State<OtpDialog> {
           child: const Text('Cancel'),
         ),
         TextButton(
-          onPressed: () async {
-            if (_key.currentState!.validate()) {
-              _key.currentState!.save();
-              PhoneAuthCredential credential = PhoneAuthProvider.credential(
-                verificationId: widget.verificationId,
-                smsCode: _otp!,
-              );
-
-              Navigator.pop(context, credential);
-            }
-          },
+          onPressed: _handleVerify,
           child: const Text('Verify'),
         ),
       ],

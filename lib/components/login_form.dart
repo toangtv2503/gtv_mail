@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gtv_mail/models/user.dart';
+import 'package:gtv_mail/services/user_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -28,45 +29,93 @@ class _LoginFormState extends State<LoginForm> {
 
   bool _isLoading = false;
 
+  late SharedPreferences prefs;
+
   @override
   void initState() {
+    init();
     super.initState();
   }
 
-  Future<dynamic> _checkLogin() async {
-    final QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .where('email', isEqualTo: email)
-        .get();
-    if (snapshot.docs.isNotEmpty) {
-      final user = snapshot.docs.first.data() as Map<String, dynamic>;
-      if (BCrypt.checkpw(password!, user['password'])) {
-        return MyUser.fromJson(user);
-      }
-      return null;
-    } else {
-      return null;
-    }
+  void init() async {
+    prefs = await SharedPreferences.getInstance();
   }
 
-  Future<void> signInWithCustomToken(String uid) async {
-    try {
-      // final response = await http.get(Uri.parse('https://us-central1-gtv-mail.cloudfunctions.net/generateCustomToken?uid=$uid'));
-      final response = await http.get(Uri.parse(
-          'http://10.0.2.2:5001/gtv-mail/us-central1/generateCustomToken?uid=$uid'));
+  void _handleLogin() async {
+    if (_loginKey.currentState!.validate()) {
+      _loginKey.currentState!.save();
 
-      if (response.statusCode == 200) {
-        final customToken = json.decode(response.body)['customToken'];
+      setState(() {
+        _isLoading = true;
+      });
 
-        UserCredential userCredential =
-            await FirebaseAuth.instance.signInWithCustomToken(customToken);
+      MyUser? user = await userService.checkLogin(email!, password!);
 
-        print("Successfully signed in with UID: ${userCredential.user?.uid}");
+      if (user != null) {
+        if (user.isEnable2FA) {
+          await FirebaseAuth.instance.verifyPhoneNumber(
+            phoneNumber: user.phone,
+            timeout: const Duration(seconds: 120),
+            verificationCompleted: (_) {},
+            verificationFailed: (FirebaseAuthException e) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text("Verification Failed"),
+                  content: const Text(
+                      "An error occurred. Please try again."),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("OK"),
+                    ),
+                  ],
+                ),
+              );
+            },
+            codeSent:
+                (String verificationId, int? resendToken) async {
+              var credential = await showDialog(
+                context: context,
+                builder: (context) =>
+                    OtpDialog(verificationId: verificationId),
+              );
+
+              await FirebaseAuth.instance
+                  .signInWithCredential(credential);
+
+              prefs.setString('email', email!);
+
+              Navigator.pop(context);
+            },
+            codeAutoRetrievalTimeout: (_) {},
+          );
+        } else {
+          await userService.signInWithCustomToken(user.uid!);
+
+          prefs.setString('email', email!);
+          Navigator.pop(context);
+        }
+        setState(() {
+          _isLoading = false;
+        });
       } else {
-        print("Failed to get custom token from server: ${response.body}");
+        setState(() {
+          _isLoading = false;
+        });
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Wrong email or password"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("OK"),
+              ),
+            ],
+          ),
+        );
       }
-    } catch (e) {
-      print("Error during sign-in: $e");
     }
   }
 
@@ -126,83 +175,7 @@ class _LoginFormState extends State<LoginForm> {
           ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: () async {
-              if (_loginKey.currentState!.validate()) {
-                _loginKey.currentState!.save();
-
-                setState(() {
-                  _isLoading = true;
-                });
-
-                MyUser? user = await _checkLogin();
-
-                if (user != null) {
-                  var prefs = await SharedPreferences.getInstance();
-                  if (user.isEnable2FA) {
-                    await FirebaseAuth.instance.verifyPhoneNumber(
-                      phoneNumber: user.phone,
-                      timeout: const Duration(seconds: 120),
-                      verificationCompleted: (_) {},
-                      verificationFailed: (FirebaseAuthException e) {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("Verification Failed"),
-                            content: const Text(
-                                "An error occurred. Please try again."),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text("OK"),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      codeSent:
-                          (String verificationId, int? resendToken) async {
-                        var credential = await showDialog(
-                          context: context,
-                          builder: (context) =>
-                              OtpDialog(verificationId: verificationId),
-                        );
-
-                        await FirebaseAuth.instance
-                            .signInWithCredential(credential);
-
-
-                        prefs.setString('email', email!);
-                        Navigator.pop(context);
-                      },
-                      codeAutoRetrievalTimeout: (_) {},
-                    );
-                  } else {
-                    signInWithCustomToken(user.uid!);
-                    prefs.setString('email', email!);
-                    Navigator.pop(context);
-                  }
-                  setState(() {
-                    _isLoading = false;
-                  });
-                } else {
-                  setState(() {
-                    _isLoading = false;
-                  });
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text("Wrong email or password"),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text("OK"),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-              }
-            },
+            onPressed: _handleLogin,
             child: _isLoading
                 ? Lottie.asset(
                     'assets/lottiefiles/circle_loading.json',

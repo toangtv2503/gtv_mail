@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "497678894055",
+    "project_id": "gtv-mail",
+    "storage_bucket": "gtv-mail.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:497678894055:android:953d8c43c20a681bbd3342",
+        "android_client_info": {
+          "package_name": "com.toangtv.gtv_mail"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "497678894055-0sod0qhbu99c3p11hdm72de96qej1s1n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.toangtv.gtv_mail",
+            "certificate_hash": "0c60c96e255291aeab96925355668e309aad1ecb"
+          }
+        },
+        {
+          "client_id": "497678894055-loevco16hmhv9th6j3bsrdu37kb03q69.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDT-95yF9cQCz6XdkGzwNKjcHCCoIe1qw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "497678894055-loevco16hmhv9th6j3bsrdu37kb03q69.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "497678894055-spp0bbsvj2vmh79rptvuhk79pat0kjva.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.toangtv.gtvMail"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

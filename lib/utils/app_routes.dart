@@ -8,9 +8,17 @@ import '../screens/not_found_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   errorBuilder: (BuildContext context, GoRouterState state) {
-    return NotFoundScreen(
-      url: state.uri.path,
-    );
+    return NotFoundScreen(url: state.uri.path,);
+  },
+  redirect: (context, state) {
+    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
+    final isLoggingIn = state.matchedLocation == '/';
+
+    if (isLoggedIn && isLoggingIn) {
+      return '/';
+    }
+
+    return null;
   },
   routes: <RouteBase>[
     GoRoute(
@@ -20,8 +28,7 @@ final GoRouter appRouter = GoRouter(
         return StreamBuilder<User?>(
           stream: FirebaseAuth.instance.authStateChanges(),
           builder: (context, snapshot) {
-            if (snapshot.hasData &&
-                FirebaseAuth.instance.currentUser!.photoURL != null) {
+            if (snapshot.hasData && FirebaseAuth.instance.currentUser!.photoURL != null) {
               return const HomeScreen();
             } else {
               return const LoginScreen();

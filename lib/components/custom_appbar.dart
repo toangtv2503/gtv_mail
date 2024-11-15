@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
+import '../services/user_service.dart';
+
 class CustomAppbar extends StatefulWidget {
   const CustomAppbar({super.key});
 
@@ -30,7 +32,7 @@ class _CustomAppbarState extends State<CustomAppbar> {
                 onTap: () {},
                 child: CircleAvatar(
                   child: CachedNetworkImage(
-                    imageUrl: FirebaseAuth.instance.currentUser!.photoURL!,
+                    imageUrl: userService.getCurrentUser()!.photoURL!,
                     imageBuilder: (context, imageProvider) => Container(
                       decoration: BoxDecoration(
                         image: DecorationImage(image: imageProvider),

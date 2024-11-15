@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gtv_mail/models/user.dart';
+import 'package:gtv_mail/services/user_service.dart';
 import 'package:gtv_mail/utils/country_codes.dart';
 import 'package:gtv_mail/components/otp_dialog.dart';
 import 'package:lottie/lottie.dart';
@@ -41,22 +42,6 @@ class _RegisterFormState extends State<RegisterForm> {
     currentIndex =
         MyCountry.countries.indexWhere((country) => country.isoCode == isoCode);
     super.initState();
-  }
-
-  Future<bool> _checkPhoneNumberExists(String phone) async {
-    final QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .where('phone', isEqualTo: phone)
-        .get();
-    return snapshot.docs.isNotEmpty;
-  }
-
-  Future<bool> _checkEmailExisted(String email) async {
-    final QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .where('email', isEqualTo: email)
-        .get();
-    return snapshot.docs.isNotEmpty;
   }
 
   void _showPhoneExistsDialog() {
@@ -144,8 +129,8 @@ class _RegisterFormState extends State<RegisterForm> {
         _isLoading = true;
       });
 
-      bool phoneExists = await _checkPhoneNumberExists(phoneNumber!);
-      bool emailExists = await _checkEmailExisted(email!);
+      bool phoneExists = await userService.checkPhoneNumberExists(phoneNumber!);
+      bool emailExists = await userService.checkEmailExisted(email!);
 
       if (phoneExists) {
         _showPhoneExistsDialog();
@@ -190,34 +175,20 @@ class _RegisterFormState extends State<RegisterForm> {
                 User? user = userCredential.user;
 
                 if (user != null) {
-                  await user.updateProfile(
-                      photoURL:
-                          'https://firebasestorage.googleapis.com/v0/b/gtv-mail.firebasestorage.app/o/default_assets%2Fuser_avatar_default.png?alt=media&token=7c5f76fb-ce9f-465f-ac75-1e2212c58913',
-                      displayName: username);
-
                   MyUser newUser = MyUser(
                       uid: user.uid,
                       name: username,
-                      phone: user.phoneNumber,
+                      phone: phoneNumber,
                       email: email,
-                      imageUrl:
-                          'https://firebasestorage.googleapis.com/v0/b/gtv-mail.firebasestorage.app/o/default_assets%2Fuser_avatar_default.png?alt=media&token=7c5f76fb-ce9f-465f-ac75-1e2212c58913',
-                      password:
-                          BCrypt.hashpw(password.toString(), BCrypt.gensalt()));
+                      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/gtv-mail.firebasestorage.app/o/default_assets%2Fuser_avatar_default.png?alt=media&token=7c5f76fb-ce9f-465f-ac75-1e2212c58913',
+                      password: BCrypt.hashpw(password.toString(), BCrypt.gensalt()));
 
-                  await FirebaseFirestore.instance
-                      .collection("users")
-                      .doc(user.uid)
-                      .set(newUser.toJson());
+                  await userService.registerAccount(newUser, user);
 
                   var prefs = await SharedPreferences.getInstance();
                   prefs.setString('email', email!);
 
-                  user.reload().then(
-                    (_) {
-                      context.pushNamed('home');
-                    },
-                  );
+                  context.pushNamed('home');
                 }
               } catch (e) {
                 setState(() {
