@@ -1,3 +1,5 @@
+import 'package:gtv_mail/utils/image_default.dart';
+
 class MyUser {
   String? uid;
   String? name;
@@ -27,7 +29,7 @@ class MyUser {
       name: json['name'] ?? 'Anonymous',
       phone: json['phone'],
       email: json['email'],
-      imageUrl: json['imageUrl'] ?? 'https://firebasestorage.googleapis.com/v0/b/gtv-mail.firebasestorage.app/o/default_assets%2Fuser_avatar_default.png?alt=media&token=7c5f76fb-ce9f-465f-ac75-1e2212c58913',
+      imageUrl: json['imageUrl'] ?? DEFAULT_AVATAR,
       password: json['password'],
       isEnable2FA : json['isEnable2FA'] ?? false
     );

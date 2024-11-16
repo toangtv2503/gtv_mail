@@ -96,9 +96,6 @@ class _LoginFormState extends State<LoginForm> {
           prefs.setString('email', email!);
           Navigator.pop(context);
         }
-        setState(() {
-          _isLoading = false;
-        });
       } else {
         setState(() {
           _isLoading = false;

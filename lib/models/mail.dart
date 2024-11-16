@@ -4,9 +4,9 @@ import 'attachment.dart';
 class Mail {
   String? uid;
   String? from;
-  String? to;
-  List<String?> cc;
-  List<String?> bcc;
+  List<String>? to;
+  List<String>? cc;
+  List<String>? bcc;
   String? subject;
   Document? body;
   DateTime? sentDate;
@@ -23,7 +23,7 @@ class Mail {
   Mail({
     this.uid,
     this.from,
-    this.to,
+    this.to = const [],
     this.cc = const [],
     this.bcc = const [],
     this.subject,
@@ -66,7 +66,7 @@ class Mail {
     return Mail(
       uid: json['uid'] ?? 'Default Mail UID',
       from: json['from'] ?? 'Unknown Sender',
-      to: json['to'],
+      to: List<String>.from(json['to'] ?? []),
       cc: List<String>.from(json['cc'] ?? []),
       bcc: List<String>.from(json['bcc'] ?? []),
       subject: json['subject'] ?? 'No Subject',

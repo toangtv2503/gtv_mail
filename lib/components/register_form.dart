@@ -16,6 +16,8 @@ import 'package:lottie/lottie.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../utils/image_default.dart';
+
 class RegisterForm extends StatefulWidget {
   const RegisterForm({super.key});
 
@@ -180,7 +182,7 @@ class _RegisterFormState extends State<RegisterForm> {
                       name: username,
                       phone: phoneNumber,
                       email: email,
-                      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/gtv-mail.firebasestorage.app/o/default_assets%2Fuser_avatar_default.png?alt=media&token=7c5f76fb-ce9f-465f-ac75-1e2212c58913',
+                      imageUrl: DEFAULT_AVATAR,
                       password: BCrypt.hashpw(password.toString(), BCrypt.gensalt()));
 
                   await userService.registerAccount(newUser, user);

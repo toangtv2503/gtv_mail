@@ -56,6 +56,9 @@ dependencies:
   flutter_quill: ^10.8.5
   flutter_tags: ^1.0.0-nullsafety.1
   textfield_tags: ^3.0.1
+  uuid: ^4.5.1
+  flutter_slidable: ^3.1.1
+  rxdart: ^0.28.0
 
 dev_dependencies:
   flutter_test:

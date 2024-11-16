@@ -4,6 +4,7 @@ import 'package:bcrypt/bcrypt.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gtv_mail/models/user.dart';
+import 'package:gtv_mail/utils/image_default.dart';
 import 'package:http/http.dart' as http;
 
 final UserService userService = UserService();
@@ -29,9 +30,7 @@ class UserService {
 
   Future<void> registerAccount(MyUser newUser, User user) async {
     await user.updateProfile(
-        photoURL:
-        'https://firebasestorage.googleapis.com/v0/b/gtv-mail.firebasestorage.app/o/default_assets%2Fuser_avatar_default.png?alt=media&token=7c5f76fb-ce9f-465f-ac75-1e2212c58913',
-        displayName: newUser.name);
+        photoURL: DEFAULT_AVATAR, displayName: newUser.name);
 
     await FirebaseFirestore.instance
         .collection("users")
@@ -41,7 +40,7 @@ class UserService {
     await user.reload();
   }
 
-  Future<MyUser?> checkLogin(String email,String password) async {
+  Future<MyUser?> checkLogin(String email, String password) async {
     final QuerySnapshot snapshot = await FirebaseFirestore.instance
         .collection('users')
         .where('email', isEqualTo: email)
@@ -67,7 +66,7 @@ class UserService {
         final customToken = json.decode(response.body)['customToken'];
 
         UserCredential userCredential =
-        await FirebaseAuth.instance.signInWithCustomToken(customToken);
+            await FirebaseAuth.instance.signInWithCustomToken(customToken);
 
         print("Successfully signed in with UID: ${userCredential.user?.uid}");
       } else {
@@ -76,5 +75,23 @@ class UserService {
     } catch (e) {
       print("Error during sign-in: $e");
     }
+  }
+
+  Future<List<MyUser>> fetchUsers() async {
+    final querySnapshot =
+        await FirebaseFirestore.instance.collection("users").get();
+
+    return querySnapshot.docs.map((doc) {
+      return MyUser.fromJson(doc.data());
+    }).toList();
+  }
+
+  Future<Map<String, MyUser>> fetchSenderCached() async {
+    final querySnapshot =
+        await FirebaseFirestore.instance.collection("users").get();
+
+    return Map.fromIterable(querySnapshot.docs,
+        key: (doc) => doc['email'] as String,
+        value: (doc) => MyUser.fromJson(doc.data()));
   }
 }

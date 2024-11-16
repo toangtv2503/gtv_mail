@@ -4,11 +4,16 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:gtv_mail/utils/app_theme.dart';
+import 'package:gtv_mail/models/mail.dart';
+import 'package:gtv_mail/models/user.dart';
+import 'package:gtv_mail/services/user_service.dart';
+import 'package:gtv_mail/utils/image_default.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:textfield_tags/textfield_tags.dart';
+import 'package:uuid/uuid.dart';
 
+import '../services/mail_service.dart';
 import '../utils/button_data.dart';
 
 class ComposeMail extends StatefulWidget {
@@ -21,18 +26,18 @@ class ComposeMail extends StatefulWidget {
 }
 
 class _ComposeMailState extends State<ComposeMail> {
-  final QuillController _controller = QuillController.basic();
+  final QuillController _bodyController = QuillController.basic();
   late SharedPreferences prefs;
   final TextEditingController _fromController = TextEditingController();
-  final _stringTagController = StringTagController();
   var _key = GlobalKey<FormState>();
+  String? _subject;
+  bool isShowMore = false;
 
   void init() async {
     prefs = await SharedPreferences.getInstance();
     setState(() {
       _fromController.text = prefs.getString('email') ?? '';
     });
-    _dynamicTagController = DynamicTagController<DynamicTagData<ButtonData>>();
   }
 
   @override
@@ -43,22 +48,49 @@ class _ComposeMailState extends State<ComposeMail> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    _bodyController.dispose();
     _fromController.dispose();
-    _dynamicTagController.dispose();
+    _toEmailsController.dispose();
+    _ccEmailsController.dispose();
+    _bccEmailsController.dispose();
     super.dispose();
   }
 
-  void _handleAttachment() {
+  void _handleAttachment() {}
 
-  }
-
-  void _handleSend() {
-    if(_key.currentState?.validate() ?? false) {
+  void _handleSend() async {
+    if (_key.currentState?.validate() ?? false) {
       _key.currentState!.save();
 
-      List<String> toEmails = _dynamicTagController.getTags!.map((tag) => tag.tag).toList();
-      print(toEmails);
+      List<String> toEmails =
+          _toEmailsController.getTags?.map((tag) => tag.tag).toList() ?? [];
+      List<String> ccEmails =
+          _ccEmailsController.getTags?.map((tag) => tag.tag).toList() ?? [];
+      List<String> bccEmails =
+          _bccEmailsController.getTags?.map((tag) => tag.tag).toList() ?? [];
+
+      if (toEmails.length + ccEmails.length + bccEmails.length == 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Please add at least one recipient!'),
+        ));
+        return;
+      }
+
+      String uid = const Uuid().v8();
+      Mail newMail = Mail(
+        uid: uid,
+        from: _fromController.text,
+        subject: _subject,
+        to: toEmails.isEmpty ? null : toEmails,
+        cc: ccEmails.isEmpty ? null : ccEmails,
+        bcc: bccEmails.isEmpty ? null : bccEmails,
+        body: _bodyController.document,
+        sentDate: DateTime.now()
+      );
+
+      await mailService.sendEmail(newMail);
+
+      Navigator.pop(context);
     }
   }
 
@@ -69,53 +101,26 @@ class _ComposeMailState extends State<ComposeMail> {
   }
 
   late double _distanceToField;
-  late DynamicTagController<DynamicTagData<ButtonData>> _dynamicTagController;
+  final DynamicTagController<DynamicTagData<ButtonData>> _toEmailsController =
+      DynamicTagController<DynamicTagData<ButtonData>>();
+  DynamicTagController<DynamicTagData<ButtonData>> _ccEmailsController =
+      DynamicTagController<DynamicTagData<ButtonData>>();
+  DynamicTagController<DynamicTagData<ButtonData>> _bccEmailsController =
+      DynamicTagController<DynamicTagData<ButtonData>>();
   final random = Random();
 
-  static final List<DynamicTagData<ButtonData>> _initialTags = [
-    DynamicTagData<ButtonData>(
-      'cat',
-      const ButtonData(
-        Color.fromARGB(255, 202, 198, 253),
-        "😽",
-      ),
-    ),
-    DynamicTagData(
-      'penguin',
-      const ButtonData(
-        Color.fromARGB(255, 199, 244, 255),
-        '🐧',
-      ),
-    ),
-    DynamicTagData(
-      'tiger',
-      const ButtonData(
-        Color.fromARGB(255, 252, 195, 250),
-        '🐯',
-      ),
-    ),
-    DynamicTagData<ButtonData>(
-      'whale',
-      const ButtonData(
-        Color.fromARGB(255, 209, 248, 193),
-        "🐋",
-      ),
-    ),
-    DynamicTagData<ButtonData>(
-      'bear',
-      const ButtonData(
-        Color.fromARGB(255, 254, 237, 199),
-        '🐻',
-      ),
-    ),
-    DynamicTagData(
-      'lion',
-      const ButtonData(
-        Color.fromARGB(255, 252, 196, 196),
-        '🦁',
-      ),
-    ),
-  ];
+  Future<List<DynamicTagData<ButtonData>>> fetchMails() async {
+    List<MyUser> users = await userService.fetchUsers();
+
+    return users.map((user) {
+      final color = Color.fromARGB(random.nextInt(256), random.nextInt(256),
+          random.nextInt(256), random.nextInt(256));
+      return DynamicTagData<ButtonData>(
+        user.email.toString(),
+        ButtonData(color, user.imageUrl!),
+      );
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -158,30 +163,26 @@ class _ComposeMailState extends State<ComposeMail> {
                               onPressed: () {
                                 onSelected(option);
                               },
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    child: CachedNetworkImage(
-                                      imageUrl: option.data.emoji,
-                                      imageBuilder: (context, imageProvider) =>
-                                          Container(
-                                        decoration: BoxDecoration(
-                                          image: DecorationImage(
-                                              image: imageProvider),
-                                        ),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  child: CachedNetworkImage(
+                                    imageUrl: option.data.emoji,
+                                    imageBuilder: (context, imageProvider) =>
+                                        Container(
+                                      decoration: BoxDecoration(
+                                        image: DecorationImage(
+                                            image: imageProvider),
                                       ),
-                                      placeholder: (context, url) =>
-                                          Lottie.asset(
-                                        'assets/lottiefiles/circle_loading.json',
-                                        fit: BoxFit.fill,
-                                      ),
-                                      errorWidget: (context, url, error) =>
-                                          const Icon(Icons.error),
                                     ),
+                                    placeholder: (context, url) => Lottie.asset(
+                                      'assets/lottiefiles/circle_loading.json',
+                                      fit: BoxFit.fill,
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        const Icon(Icons.error),
                                   ),
-                                  title: Text(option.tag),
                                 ),
+                                title: Text(option.tag),
                               ),
                             );
                           },
@@ -193,7 +194,7 @@ class _ComposeMailState extends State<ComposeMail> {
                 fieldViewBuilder: (context, textEditingController, focusNode,
                     onFieldSubmitted) {
                   return TextFieldTags<DynamicTagData<ButtonData>>(
-                    textfieldTagsController: _dynamicTagController,
+                    textfieldTagsController: _toEmailsController,
                     textEditingController: textEditingController,
                     focusNode: focusNode,
                     textSeparators: const [' ', ','],
@@ -205,7 +206,7 @@ class _ComposeMailState extends State<ComposeMail> {
                         return 'Your email so long';
                       } else if (!EmailValidator.validate(tag.tag)) {
                         return "Your email is invalid";
-                      } else if (_dynamicTagController.getTags!
+                      } else if (_toEmailsController.getTags!
                           .any((element) => element.tag == tag.tag)) {
                         return 'This email already enter';
                       }
@@ -217,9 +218,27 @@ class _ComposeMailState extends State<ComposeMail> {
                         controller: inputFieldValues.textEditingController,
                         focusNode: inputFieldValues.focusNode,
                         decoration: InputDecoration(
+                          suffixIcon: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  isShowMore = !isShowMore;
+                                  if (!isShowMore) {
+                                    _ccEmailsController.dispose();
+                                    _bccEmailsController.dispose();
+                                  } else {
+                                    _ccEmailsController = DynamicTagController<
+                                        DynamicTagData<ButtonData>>();
+                                    _bccEmailsController = DynamicTagController<
+                                        DynamicTagData<ButtonData>>();
+                                  }
+                                });
+                              },
+                              icon: isShowMore
+                                  ? const Icon(Icons.keyboard_arrow_up)
+                                  : const Icon(Icons.keyboard_arrow_down)),
                           isDense: true,
                           border: const UnderlineInputBorder(),
-                          prefixText: "To ",
+                          labelText: "to",
                           errorText: inputFieldValues.error,
                           prefixIconConstraints:
                               BoxConstraints(maxWidth: _distanceToField * 0.75),
@@ -231,57 +250,30 @@ class _ComposeMailState extends State<ComposeMail> {
                                   child: Row(
                                       children: inputFieldValues.tags.map(
                                           (DynamicTagData<ButtonData> tag) {
-                                    return Container(
-                                      height: 23,
-                                      decoration: BoxDecoration(
-                                        borderRadius: const BorderRadius.all(
-                                          Radius.circular(20.0),
-                                        ),
-                                        color: tag.data.buttonColor,
-                                      ),
-                                      margin: const EdgeInsets.symmetric(
-                                          horizontal: 5.0),
-                                      padding:const EdgeInsets.symmetric(
-                                          horizontal: 5.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: [
-                                          InkWell(
-                                            child: Row(
-                                              children: [
-                                                CircleAvatar(
-                                                  child: CachedNetworkImage(
-                                                    imageUrl: tag.data.emoji,
-                                                    imageBuilder: (context, imageProvider) =>
-                                                        Container(
-                                                          decoration: BoxDecoration(
-                                                            image: DecorationImage(
-                                                                image: imageProvider),
-                                                          ),
-                                                        ),
-                                                    placeholder: (context, url) =>
-                                                        Lottie.asset(
-                                                          'assets/lottiefiles/circle_loading.json',
-                                                          fit: BoxFit.fill,
-                                                        ),
-                                                    errorWidget: (context, url, error) =>
-                                                    const Icon(Icons.error),
-                                                  ),
-                                                ),
-                                                Text(tag.tag)
-                                              ],
+                                    return Chip(
+                                      label: Text(tag.tag),
+                                      onDeleted: () =>
+                                          inputFieldValues.onTagRemoved(tag),
+                                      backgroundColor: tag.data.buttonColor,
+                                      avatar: CircleAvatar(
+                                        child: CachedNetworkImage(
+                                          imageUrl: tag.data.emoji,
+                                          imageBuilder:
+                                              (context, imageProvider) =>
+                                                  Container(
+                                            decoration: BoxDecoration(
+                                              image: DecorationImage(
+                                                  image: imageProvider),
                                             ),
                                           ),
-                                          const SizedBox(width: 4.0),
-                                          InkWell(
-                                            child: const Icon(
-                                              Icons.cancel,
-                                              size: 14.0,
-                                            ),
-                                            onTap: () => inputFieldValues.onTagRemoved(tag),
-                                          )
-                                        ],
+                                          placeholder: (context, url) =>
+                                              Lottie.asset(
+                                            'assets/lottiefiles/circle_loading.json',
+                                            fit: BoxFit.fill,
+                                          ),
+                                          errorWidget: (context, url, error) =>
+                                              const Icon(Icons.error),
+                                        ),
                                       ),
                                     );
                                   }).toList()),
@@ -295,18 +287,17 @@ class _ComposeMailState extends State<ComposeMail> {
                               random.nextInt(256),
                               random.nextInt(256));
 
-                          final button = ButtonData(getColor, '✨');
+                          final button = ButtonData(getColor, DEFAULT_AVATAR);
                           final tagData = DynamicTagData(value, button);
                           inputFieldValues.onTagChanged(tagData);
                         },
-
                         onSubmitted: (value) {
                           final getColor = Color.fromARGB(
                               random.nextInt(256),
                               random.nextInt(256),
                               random.nextInt(256),
                               random.nextInt(256));
-                          final button = ButtonData(getColor, '✨');
+                          final button = ButtonData(getColor, DEFAULT_AVATAR);
                           final tagData = DynamicTagData(value, button);
                           inputFieldValues.onTagSubmitted(tagData);
                         },
@@ -314,18 +305,364 @@ class _ComposeMailState extends State<ComposeMail> {
                     },
                   );
                 },
-                optionsBuilder: (TextEditingValue textEditingValue) {
+                optionsBuilder: (TextEditingValue textEditingValue) async {
                   if (textEditingValue.text == '') {
                     return const Iterable<DynamicTagData<ButtonData>>.empty();
                   }
-                  return _initialTags
-                      .where((DynamicTagData<ButtonData> option) {
-                    return option.tag
-                        .contains(textEditingValue.text);
+                  List<MyUser> users = await userService.fetchUsers();
+                  return users
+                      .where(
+                          (user) => user.email!.contains(textEditingValue.text))
+                      .map((user) {
+                    final color = Color.fromARGB(
+                        random.nextInt(256),
+                        random.nextInt(256),
+                        random.nextInt(256),
+                        random.nextInt(256));
+                    print(user.email!);
+                    return DynamicTagData<ButtonData>(
+                      user.email!,
+                      ButtonData(color, user.imageUrl!),
+                    );
                   });
                 },
-                onSelected: (option) => _dynamicTagController.onTagSubmitted(option),
+                onSelected: (option) =>
+                    _toEmailsController.onTagSubmitted(option),
               ),
+              if (isShowMore)
+                Autocomplete<DynamicTagData<ButtonData>>(
+                  optionsViewBuilder: (context, onSelected, options) {
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: Material(
+                        elevation: 4.0,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: options.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              final DynamicTagData<ButtonData> option =
+                              options.elementAt(index);
+                              return TextButton(
+                                onPressed: () {
+                                  onSelected(option);
+                                },
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    child: CachedNetworkImage(
+                                      imageUrl: option.data.emoji,
+                                      imageBuilder: (context, imageProvider) =>
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              image: DecorationImage(
+                                                  image: imageProvider),
+                                            ),
+                                          ),
+                                      placeholder: (context, url) => Lottie.asset(
+                                        'assets/lottiefiles/circle_loading.json',
+                                        fit: BoxFit.fill,
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
+                                    ),
+                                  ),
+                                  title: Text(option.tag),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  fieldViewBuilder: (context, textEditingController, focusNode,
+                      onFieldSubmitted) {
+                    return TextFieldTags<DynamicTagData<ButtonData>>(
+                      textfieldTagsController: _ccEmailsController,
+                      textEditingController: textEditingController,
+                      focusNode: focusNode,
+                      textSeparators: const [' ', ','],
+                      letterCase: LetterCase.normal,
+                      validator: (DynamicTagData<ButtonData> tag) {
+                        if (tag.tag.isEmpty) {
+                          return 'Please enter your email';
+                        } else if (tag.tag.length > 256) {
+                          return 'Your email so long';
+                        } else if (!EmailValidator.validate(tag.tag)) {
+                          return "Your email is invalid";
+                        } else if (_ccEmailsController.getTags!
+                            .any((element) => element.tag == tag.tag)) {
+                          return 'This email already enter';
+                        }
+
+                        return null;
+                      },
+                      inputFieldBuilder: (context, inputFieldValues) {
+                        return TextField(
+                          controller: inputFieldValues.textEditingController,
+                          focusNode: inputFieldValues.focusNode,
+                          decoration: InputDecoration(
+                            isDense: true,
+                            border: const UnderlineInputBorder(),
+                            labelText: "cc",
+                            errorText: inputFieldValues.error,
+                            prefixIconConstraints:
+                            BoxConstraints(maxWidth: _distanceToField * 0.75),
+                            prefixIcon: inputFieldValues.tags.isNotEmpty
+                                ? SingleChildScrollView(
+                              controller:
+                              inputFieldValues.tagScrollController,
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                  children: inputFieldValues.tags.map(
+                                          (DynamicTagData<ButtonData> tag) {
+                                        return Chip(
+                                          label: Text(tag.tag),
+                                          onDeleted: () =>
+                                              inputFieldValues.onTagRemoved(tag),
+                                          backgroundColor: tag.data.buttonColor,
+                                          avatar: CircleAvatar(
+                                            child: CachedNetworkImage(
+                                              imageUrl: tag.data.emoji,
+                                              imageBuilder:
+                                                  (context, imageProvider) =>
+                                                  Container(
+                                                    decoration: BoxDecoration(
+                                                      image: DecorationImage(
+                                                          image: imageProvider),
+                                                    ),
+                                                  ),
+                                              placeholder: (context, url) =>
+                                                  Lottie.asset(
+                                                    'assets/lottiefiles/circle_loading.json',
+                                                    fit: BoxFit.fill,
+                                                  ),
+                                              errorWidget: (context, url, error) =>
+                                              const Icon(Icons.error),
+                                            ),
+                                          ),
+                                        );
+                                      }).toList()),
+                            )
+                                : null,
+                          ),
+                          onChanged: (value) {
+                            final getColor = Color.fromARGB(
+                                random.nextInt(256),
+                                random.nextInt(256),
+                                random.nextInt(256),
+                                random.nextInt(256));
+
+                            final button = ButtonData(getColor, DEFAULT_AVATAR);
+                            final tagData = DynamicTagData(value, button);
+                            inputFieldValues.onTagChanged(tagData);
+                          },
+                          onSubmitted: (value) {
+                            final getColor = Color.fromARGB(
+                                random.nextInt(256),
+                                random.nextInt(256),
+                                random.nextInt(256),
+                                random.nextInt(256));
+                            final button = ButtonData(getColor, DEFAULT_AVATAR);
+                            final tagData = DynamicTagData(value, button);
+                            inputFieldValues.onTagSubmitted(tagData);
+                          },
+                        );
+                      },
+                    );
+                  },
+                  optionsBuilder: (TextEditingValue textEditingValue) async {
+                    if (textEditingValue.text == '') {
+                      return const Iterable<DynamicTagData<ButtonData>>.empty();
+                    }
+                    List<MyUser> users = await userService.fetchUsers();
+                    return users
+                        .where(
+                            (user) => user.email!.contains(textEditingValue.text))
+                        .map((user) {
+                      final color = Color.fromARGB(
+                          random.nextInt(256),
+                          random.nextInt(256),
+                          random.nextInt(256),
+                          random.nextInt(256));
+                      print(user.email!);
+                      return DynamicTagData<ButtonData>(
+                        user.email!,
+                        ButtonData(color, user.imageUrl!),
+                      );
+                    });
+                  },
+                  onSelected: (option) =>
+                      _ccEmailsController.onTagSubmitted(option),
+                ),
+              if (isShowMore)
+                Autocomplete<DynamicTagData<ButtonData>>(
+                  optionsViewBuilder: (context, onSelected, options) {
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: Material(
+                        elevation: 4.0,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: options.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              final DynamicTagData<ButtonData> option =
+                              options.elementAt(index);
+                              return TextButton(
+                                onPressed: () {
+                                  onSelected(option);
+                                },
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    child: CachedNetworkImage(
+                                      imageUrl: option.data.emoji,
+                                      imageBuilder: (context, imageProvider) =>
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              image: DecorationImage(
+                                                  image: imageProvider),
+                                            ),
+                                          ),
+                                      placeholder: (context, url) => Lottie.asset(
+                                        'assets/lottiefiles/circle_loading.json',
+                                        fit: BoxFit.fill,
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
+                                    ),
+                                  ),
+                                  title: Text(option.tag),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  fieldViewBuilder: (context, textEditingController, focusNode,
+                      onFieldSubmitted) {
+                    return TextFieldTags<DynamicTagData<ButtonData>>(
+                      textfieldTagsController: _bccEmailsController,
+                      textEditingController: textEditingController,
+                      focusNode: focusNode,
+                      textSeparators: const [' ', ','],
+                      letterCase: LetterCase.normal,
+                      validator: (DynamicTagData<ButtonData> tag) {
+                        if (tag.tag.isEmpty) {
+                          return 'Please enter your email';
+                        } else if (tag.tag.length > 256) {
+                          return 'Your email so long';
+                        } else if (!EmailValidator.validate(tag.tag)) {
+                          return "Your email is invalid";
+                        } else if (_bccEmailsController.getTags!
+                            .any((element) => element.tag == tag.tag)) {
+                          return 'This email already enter';
+                        }
+
+                        return null;
+                      },
+                      inputFieldBuilder: (context, inputFieldValues) {
+                        return TextField(
+                          controller: inputFieldValues.textEditingController,
+                          focusNode: inputFieldValues.focusNode,
+                          decoration: InputDecoration(
+                            isDense: true,
+                            border: const UnderlineInputBorder(),
+                            labelText: "bcc",
+                            errorText: inputFieldValues.error,
+                            prefixIconConstraints:
+                            BoxConstraints(maxWidth: _distanceToField * 0.75),
+                            prefixIcon: inputFieldValues.tags.isNotEmpty
+                                ? SingleChildScrollView(
+                              controller:
+                              inputFieldValues.tagScrollController,
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                  children: inputFieldValues.tags.map(
+                                          (DynamicTagData<ButtonData> tag) {
+                                        return Chip(
+                                          label: Text(tag.tag),
+                                          onDeleted: () =>
+                                              inputFieldValues.onTagRemoved(tag),
+                                          backgroundColor: tag.data.buttonColor,
+                                          avatar: CircleAvatar(
+                                            child: CachedNetworkImage(
+                                              imageUrl: tag.data.emoji,
+                                              imageBuilder:
+                                                  (context, imageProvider) =>
+                                                  Container(
+                                                    decoration: BoxDecoration(
+                                                      image: DecorationImage(
+                                                          image: imageProvider),
+                                                    ),
+                                                  ),
+                                              placeholder: (context, url) =>
+                                                  Lottie.asset(
+                                                    'assets/lottiefiles/circle_loading.json',
+                                                    fit: BoxFit.fill,
+                                                  ),
+                                              errorWidget: (context, url, error) =>
+                                              const Icon(Icons.error),
+                                            ),
+                                          ),
+                                        );
+                                      }).toList()),
+                            )
+                                : null,
+                          ),
+                          onChanged: (value) {
+                            final getColor = Color.fromARGB(
+                                random.nextInt(256),
+                                random.nextInt(256),
+                                random.nextInt(256),
+                                random.nextInt(256));
+
+                            final button = ButtonData(getColor, DEFAULT_AVATAR);
+                            final tagData = DynamicTagData(value, button);
+                            inputFieldValues.onTagChanged(tagData);
+                          },
+                          onSubmitted: (value) {
+                            final getColor = Color.fromARGB(
+                                random.nextInt(256),
+                                random.nextInt(256),
+                                random.nextInt(256),
+                                random.nextInt(256));
+                            final button = ButtonData(getColor, DEFAULT_AVATAR);
+                            final tagData = DynamicTagData(value, button);
+                            inputFieldValues.onTagSubmitted(tagData);
+                          },
+                        );
+                      },
+                    );
+                  },
+                  optionsBuilder: (TextEditingValue textEditingValue) async {
+                    if (textEditingValue.text == '') {
+                      return const Iterable<DynamicTagData<ButtonData>>.empty();
+                    }
+                    List<MyUser> users = await userService.fetchUsers();
+                    return users
+                        .where(
+                            (user) => user.email!.contains(textEditingValue.text))
+                        .map((user) {
+                      final color = Color.fromARGB(
+                          random.nextInt(256),
+                          random.nextInt(256),
+                          random.nextInt(256),
+                          random.nextInt(256));
+                      print(user.email!);
+                      return DynamicTagData<ButtonData>(
+                        user.email!,
+                        ButtonData(color, user.imageUrl!),
+                      );
+                    });
+                  },
+                  onSelected: (option) =>
+                      _bccEmailsController.onTagSubmitted(option),
+                ),
               TextFormField(
                 readOnly: true,
                 decoration: const InputDecoration(
@@ -340,12 +677,22 @@ class _ComposeMailState extends State<ComposeMail> {
               TextFormField(
                 decoration: const InputDecoration(
                     border: UnderlineInputBorder(), hintText: "Subject"),
+                validator: (value) {
+                  if (value?.isEmpty ?? true) {
+                    return "Please enter your subject";
+                  } else if (value!.length > 256) {
+                    return "Your subject so long";
+                  }
+                  return null;
+                },
+                onSaved: (value) => _subject = value,
+                textInputAction: TextInputAction.next,
               ),
               const SizedBox(
                 height: 8,
               ),
               QuillSimpleToolbar(
-                controller: _controller,
+                controller: _bodyController,
                 configurations: const QuillSimpleToolbarConfigurations(
                     multiRowsDisplay: false,
                     showSmallButton: true,
@@ -365,7 +712,7 @@ class _ComposeMailState extends State<ComposeMail> {
                   ),
                   padding: const EdgeInsets.all(8),
                   child: QuillEditor.basic(
-                    controller: _controller,
+                    controller: _bodyController,
                     configurations: const QuillEditorConfigurations(
                       placeholder: "Body",
                     ),
