@@ -19,6 +19,7 @@ class Mail {
   List<String>? labels;
   bool isDraft;
   List<Attachment>? attachments;
+  List<Mail> replies;
 
   Mail({
     this.uid,
@@ -38,6 +39,7 @@ class Mail {
     this.labels = const [],
     this.isDraft = false,
     this.attachments,
+    this.replies = const [],
   });
 
   Map<String, dynamic> toJson() {
@@ -59,6 +61,7 @@ class Mail {
       'labels': labels,
       'isDraft': isDraft,
       'attachments': attachments?.map((att) => att.toJson()).toList(),
+      'replies': replies
     };
   }
 
@@ -87,6 +90,7 @@ class Mail {
       attachments: (json['attachments'] as List<dynamic>?)
           ?.map((att) => Attachment.fromJson(att as Map<String, dynamic>))
           .toList(),
+      replies: List<Mail>.from(json['replies'] ?? []),
     );
   }
 }

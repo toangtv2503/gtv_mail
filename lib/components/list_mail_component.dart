@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:go_router/go_router.dart';
+import 'package:gtv_mail/components/register_form.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:gtv_mail/services/user_service.dart';
 import 'package:lottie/lottie.dart';
@@ -35,6 +37,13 @@ class _ListMailComponentState extends State<ListMailComponent> with SingleTicker
     super.initState();
   }
 
+  void _handleDetailMail(Mail mail, MyUser senderInfo) {
+    context.pushNamed('detail',
+        pathParameters: {'id': mail.uid!},
+        extra: {'mail': mail, 'senderInfo': senderInfo
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Mail>>(
@@ -44,7 +53,7 @@ class _ListMailComponentState extends State<ListMailComponent> with SingleTicker
           return SliverToBoxAdapter(
             child: Center(
               child: SizedBox(
-                width: 400,
+                width: 50,
                 child: Lottie.asset(
                   'assets/lottiefiles/circle_loading.json',
                   fit: BoxFit.fill,
@@ -55,7 +64,7 @@ class _ListMailComponentState extends State<ListMailComponent> with SingleTicker
         } else if (snapshot.hasError) {
           return SliverToBoxAdapter(
               child: Center(
-                child: Text('Error: ${snapshot.error}', style: Theme.of(context).textTheme.displayLarge,)
+                child: Text('Error: ${snapshot.error}', style: Theme.of(context).textTheme.displaySmall,)
               )
           );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -132,7 +141,7 @@ class _ListMailComponentState extends State<ListMailComponent> with SingleTicker
                         ],
                       ),
                       child: ListTile(
-                        onTap: () {},
+                        onTap: () => _handleDetailMail(mails[index], userCache[mails[index].from]!),
                         leading: CircleAvatar(
                           child: CachedNetworkImage(
                             imageUrl: userCache[mails[index].from]!.imageUrl!,
@@ -170,7 +179,9 @@ class _ListMailComponentState extends State<ListMailComponent> with SingleTicker
                                 style: Theme.of(context).textTheme.titleSmall,
                               ),
                               IconButton(
-                                onPressed: () {},
+                                onPressed: () {
+
+                                },
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
                                 icon: const Icon(

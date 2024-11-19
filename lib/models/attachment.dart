@@ -4,7 +4,7 @@ class Attachment {
   String? extension;
   int? size;
 
-  Attachment(this.url, this.fileName, this.extension, this.size);
+  Attachment({this.url, this.fileName, this.extension, this.size});
 
   Map<String, dynamic> toJson() {
     return {
@@ -17,10 +17,11 @@ class Attachment {
 
   factory Attachment.fromJson(Map<String, dynamic> json) {
     return Attachment(
-      json['url'],
-      json['fileName'],
-      json['extension'],
-      json['size'],
+      url: json['url'],
+      fileName: json['fileName'],
+      extension: json['extension'],
+      size: json['size'],
     );
   }
+
 }

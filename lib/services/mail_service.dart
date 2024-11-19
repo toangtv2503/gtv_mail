@@ -6,6 +6,7 @@ import '../models/mail.dart';
 final MailService mailService = MailService();
 
 class MailService {
+
   Future<void> sendEmail(Mail newMail) async{
     await FirebaseFirestore.instance
         .collection("mails")
@@ -49,7 +50,9 @@ class MailService {
         void addMails(QuerySnapshot snapshot) {
           for (final doc in snapshot.docs) {
             final mail = Mail.fromJson(doc.data() as Map<String, dynamic>);
-            uniqueMails.add(mail);
+            if (!uniqueMails.any((m) => m.uid == mail.uid)) {
+              uniqueMails.add(mail);
+            }
           }
         }
 
@@ -57,7 +60,7 @@ class MailService {
         addMails(ccSnapshot);
         addMails(bccSnapshot);
 
-        return uniqueMails.toList().reversed.toList();;
+        return uniqueMails.toList().reversed.toList();
       },
     );
   }

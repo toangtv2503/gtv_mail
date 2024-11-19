@@ -2,16 +2,21 @@ import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:email_validator/email_validator.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:gtv_mail/models/attachment.dart';
 import 'package:gtv_mail/models/mail.dart';
 import 'package:gtv_mail/models/user.dart';
+import 'package:gtv_mail/services/file_service.dart';
 import 'package:gtv_mail/services/user_service.dart';
 import 'package:gtv_mail/utils/image_default.dart';
 import 'package:lottie/lottie.dart';
+import 'package:open_file/open_file.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:textfield_tags/textfield_tags.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter/foundation.dart';
 
 import '../services/mail_service.dart';
 import '../utils/button_data.dart';
@@ -32,6 +37,8 @@ class _ComposeMailState extends State<ComposeMail> {
   var _key = GlobalKey<FormState>();
   String? _subject;
   bool isShowMore = false;
+  List<Attachment> attachments = [];
+  List<PlatformFile> fileCached = [];
 
   void init() async {
     prefs = await SharedPreferences.getInstance();
@@ -56,7 +63,104 @@ class _ComposeMailState extends State<ComposeMail> {
     super.dispose();
   }
 
-  void _handleAttachment() {}
+  String formatFileSize(int sizeInBytes) {
+    if (sizeInBytes < 1024) {
+      return '$sizeInBytes B';
+    } else if (sizeInBytes < 1024 * 1024) {
+      return '${(sizeInBytes / 1024).toStringAsFixed(2)} KB';
+    } else if (sizeInBytes < 1024 * 1024 * 1024) {
+      return '${(sizeInBytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+    } else {
+      return '${(sizeInBytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+    }
+  }
+
+  void _handleDeleteFile(Attachment attachment) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Attachment'),
+          content:
+              Text('Are you sure you want to delete "${attachment.fileName}"?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  attachments.remove(attachment);
+                  fileCached
+                      .removeWhere((cached) => cached.path == attachment.url);
+                });
+                Navigator.of(context).pop();
+              },
+              child: const Text('Yes'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _openFile(Attachment attachment) async {
+    if (attachment.url != null) {
+      final filePath = attachment.url!;
+      final result = await OpenFile.open(filePath);
+
+      if (result.type != ResultType.done) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Error'),
+              content: const Text('Could not open the file.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+      }
+    }
+  }
+
+  void _handleAttachment() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.any,
+    );
+
+    if (result != null) {
+      setState(() {
+        for (var file in result.files) {
+          if (!fileCached.any((cachedFile) => cachedFile.name == file.name)) {
+            fileCached.add(file);
+          }
+        }
+
+        for (var file in result.files) {
+          if (!attachments.any((attachment) => attachment.fileName == file.name)) {
+            attachments.add(Attachment(
+              url: file.path,
+              fileName: file.name,
+              extension: file.extension,
+              size: file.size,
+            ));
+          }
+        }
+      });
+    }
+  }
 
   void _handleSend() async {
     if (_key.currentState?.validate() ?? false) {
@@ -76,6 +180,11 @@ class _ComposeMailState extends State<ComposeMail> {
         return;
       }
 
+      List<Attachment> sendAttachments = [];
+      if (attachments.isNotEmpty) {
+        sendAttachments = await fileService.mapFilesToAttachments(fileCached);
+      }
+
       String uid = const Uuid().v8();
       Mail newMail = Mail(
         uid: uid,
@@ -85,7 +194,8 @@ class _ComposeMailState extends State<ComposeMail> {
         cc: ccEmails.isEmpty ? null : ccEmails,
         bcc: bccEmails.isEmpty ? null : bccEmails,
         body: _bodyController.document,
-        sentDate: DateTime.now()
+        sentDate: DateTime.now(),
+        attachments: sendAttachments.isNotEmpty ?  sendAttachments: null,
       );
 
       await mailService.sendEmail(newMail);
@@ -343,7 +453,7 @@ class _ComposeMailState extends State<ComposeMail> {
                             itemCount: options.length,
                             itemBuilder: (BuildContext context, int index) {
                               final DynamicTagData<ButtonData> option =
-                              options.elementAt(index);
+                                  options.elementAt(index);
                               return TextButton(
                                 onPressed: () {
                                   onSelected(option);
@@ -354,17 +464,18 @@ class _ComposeMailState extends State<ComposeMail> {
                                       imageUrl: option.data.emoji,
                                       imageBuilder: (context, imageProvider) =>
                                           Container(
-                                            decoration: BoxDecoration(
-                                              image: DecorationImage(
-                                                  image: imageProvider),
-                                            ),
-                                          ),
-                                      placeholder: (context, url) => Lottie.asset(
+                                        decoration: BoxDecoration(
+                                          image: DecorationImage(
+                                              image: imageProvider),
+                                        ),
+                                      ),
+                                      placeholder: (context, url) =>
+                                          Lottie.asset(
                                         'assets/lottiefiles/circle_loading.json',
                                         fit: BoxFit.fill,
                                       ),
                                       errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
+                                          const Icon(Icons.error),
                                     ),
                                   ),
                                   title: Text(option.tag),
@@ -407,44 +518,45 @@ class _ComposeMailState extends State<ComposeMail> {
                             border: const UnderlineInputBorder(),
                             labelText: "cc",
                             errorText: inputFieldValues.error,
-                            prefixIconConstraints:
-                            BoxConstraints(maxWidth: _distanceToField * 0.75),
+                            prefixIconConstraints: BoxConstraints(
+                                maxWidth: _distanceToField * 0.75),
                             prefixIcon: inputFieldValues.tags.isNotEmpty
                                 ? SingleChildScrollView(
-                              controller:
-                              inputFieldValues.tagScrollController,
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                  children: inputFieldValues.tags.map(
-                                          (DynamicTagData<ButtonData> tag) {
-                                        return Chip(
-                                          label: Text(tag.tag),
-                                          onDeleted: () =>
-                                              inputFieldValues.onTagRemoved(tag),
-                                          backgroundColor: tag.data.buttonColor,
-                                          avatar: CircleAvatar(
-                                            child: CachedNetworkImage(
-                                              imageUrl: tag.data.emoji,
-                                              imageBuilder:
-                                                  (context, imageProvider) =>
-                                                  Container(
-                                                    decoration: BoxDecoration(
-                                                      image: DecorationImage(
-                                                          image: imageProvider),
-                                                    ),
-                                                  ),
-                                              placeholder: (context, url) =>
-                                                  Lottie.asset(
-                                                    'assets/lottiefiles/circle_loading.json',
-                                                    fit: BoxFit.fill,
-                                                  ),
-                                              errorWidget: (context, url, error) =>
-                                              const Icon(Icons.error),
+                                    controller:
+                                        inputFieldValues.tagScrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                        children: inputFieldValues.tags.map(
+                                            (DynamicTagData<ButtonData> tag) {
+                                      return Chip(
+                                        label: Text(tag.tag),
+                                        onDeleted: () =>
+                                            inputFieldValues.onTagRemoved(tag),
+                                        backgroundColor: tag.data.buttonColor,
+                                        avatar: CircleAvatar(
+                                          child: CachedNetworkImage(
+                                            imageUrl: tag.data.emoji,
+                                            imageBuilder:
+                                                (context, imageProvider) =>
+                                                    Container(
+                                              decoration: BoxDecoration(
+                                                image: DecorationImage(
+                                                    image: imageProvider),
+                                              ),
                                             ),
+                                            placeholder: (context, url) =>
+                                                Lottie.asset(
+                                              'assets/lottiefiles/circle_loading.json',
+                                              fit: BoxFit.fill,
+                                            ),
+                                            errorWidget:
+                                                (context, url, error) =>
+                                                    const Icon(Icons.error),
                                           ),
-                                        );
-                                      }).toList()),
-                            )
+                                        ),
+                                      );
+                                    }).toList()),
+                                  )
                                 : null,
                           ),
                           onChanged: (value) {
@@ -478,8 +590,8 @@ class _ComposeMailState extends State<ComposeMail> {
                     }
                     List<MyUser> users = await userService.fetchUsers();
                     return users
-                        .where(
-                            (user) => user.email!.contains(textEditingValue.text))
+                        .where((user) =>
+                            user.email!.contains(textEditingValue.text))
                         .map((user) {
                       final color = Color.fromARGB(
                           random.nextInt(256),
@@ -510,7 +622,7 @@ class _ComposeMailState extends State<ComposeMail> {
                             itemCount: options.length,
                             itemBuilder: (BuildContext context, int index) {
                               final DynamicTagData<ButtonData> option =
-                              options.elementAt(index);
+                                  options.elementAt(index);
                               return TextButton(
                                 onPressed: () {
                                   onSelected(option);
@@ -521,17 +633,18 @@ class _ComposeMailState extends State<ComposeMail> {
                                       imageUrl: option.data.emoji,
                                       imageBuilder: (context, imageProvider) =>
                                           Container(
-                                            decoration: BoxDecoration(
-                                              image: DecorationImage(
-                                                  image: imageProvider),
-                                            ),
-                                          ),
-                                      placeholder: (context, url) => Lottie.asset(
+                                        decoration: BoxDecoration(
+                                          image: DecorationImage(
+                                              image: imageProvider),
+                                        ),
+                                      ),
+                                      placeholder: (context, url) =>
+                                          Lottie.asset(
                                         'assets/lottiefiles/circle_loading.json',
                                         fit: BoxFit.fill,
                                       ),
                                       errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
+                                          const Icon(Icons.error),
                                     ),
                                   ),
                                   title: Text(option.tag),
@@ -574,44 +687,45 @@ class _ComposeMailState extends State<ComposeMail> {
                             border: const UnderlineInputBorder(),
                             labelText: "bcc",
                             errorText: inputFieldValues.error,
-                            prefixIconConstraints:
-                            BoxConstraints(maxWidth: _distanceToField * 0.75),
+                            prefixIconConstraints: BoxConstraints(
+                                maxWidth: _distanceToField * 0.75),
                             prefixIcon: inputFieldValues.tags.isNotEmpty
                                 ? SingleChildScrollView(
-                              controller:
-                              inputFieldValues.tagScrollController,
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                  children: inputFieldValues.tags.map(
-                                          (DynamicTagData<ButtonData> tag) {
-                                        return Chip(
-                                          label: Text(tag.tag),
-                                          onDeleted: () =>
-                                              inputFieldValues.onTagRemoved(tag),
-                                          backgroundColor: tag.data.buttonColor,
-                                          avatar: CircleAvatar(
-                                            child: CachedNetworkImage(
-                                              imageUrl: tag.data.emoji,
-                                              imageBuilder:
-                                                  (context, imageProvider) =>
-                                                  Container(
-                                                    decoration: BoxDecoration(
-                                                      image: DecorationImage(
-                                                          image: imageProvider),
-                                                    ),
-                                                  ),
-                                              placeholder: (context, url) =>
-                                                  Lottie.asset(
-                                                    'assets/lottiefiles/circle_loading.json',
-                                                    fit: BoxFit.fill,
-                                                  ),
-                                              errorWidget: (context, url, error) =>
-                                              const Icon(Icons.error),
+                                    controller:
+                                        inputFieldValues.tagScrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                        children: inputFieldValues.tags.map(
+                                            (DynamicTagData<ButtonData> tag) {
+                                      return Chip(
+                                        label: Text(tag.tag),
+                                        onDeleted: () =>
+                                            inputFieldValues.onTagRemoved(tag),
+                                        backgroundColor: tag.data.buttonColor,
+                                        avatar: CircleAvatar(
+                                          child: CachedNetworkImage(
+                                            imageUrl: tag.data.emoji,
+                                            imageBuilder:
+                                                (context, imageProvider) =>
+                                                    Container(
+                                              decoration: BoxDecoration(
+                                                image: DecorationImage(
+                                                    image: imageProvider),
+                                              ),
                                             ),
+                                            placeholder: (context, url) =>
+                                                Lottie.asset(
+                                              'assets/lottiefiles/circle_loading.json',
+                                              fit: BoxFit.fill,
+                                            ),
+                                            errorWidget:
+                                                (context, url, error) =>
+                                                    const Icon(Icons.error),
                                           ),
-                                        );
-                                      }).toList()),
-                            )
+                                        ),
+                                      );
+                                    }).toList()),
+                                  )
                                 : null,
                           ),
                           onChanged: (value) {
@@ -645,8 +759,8 @@ class _ComposeMailState extends State<ComposeMail> {
                     }
                     List<MyUser> users = await userService.fetchUsers();
                     return users
-                        .where(
-                            (user) => user.email!.contains(textEditingValue.text))
+                        .where((user) =>
+                            user.email!.contains(textEditingValue.text))
                         .map((user) {
                       final color = Color.fromARGB(
                           random.nextInt(256),
@@ -705,6 +819,7 @@ class _ComposeMailState extends State<ComposeMail> {
                 height: 8,
               ),
               Expanded(
+                flex: 4,
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
@@ -718,7 +833,58 @@ class _ComposeMailState extends State<ComposeMail> {
                     ),
                   ),
                 ),
-              )
+              ),
+              if (attachments.isNotEmpty && !kIsWeb)
+                Expanded(
+                    flex: 1,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: attachments.map((attachment) {
+                          return GestureDetector(
+                            onTap: () => _openFile(attachment),
+                            onLongPress: () => _handleDeleteFile(attachment),
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: SingleChildScrollView(
+                                child: SizedBox(
+                                  height: 100,
+                                  width: 100,
+                                  child: Card(
+                                    elevation: 5.0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                          10.0), // Rounded corners
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Column(
+                                        children: [
+                                          ClipOval(
+                                            child: Image.asset(
+                                              "assets/images/attachment.png",
+                                              height: 42,
+                                            ),
+                                          ), // Attachment icon
+                                          Text(
+                                            attachment.fileName!,
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                              formatFileSize(attachment.size!)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ))
             ],
           ),
         ),

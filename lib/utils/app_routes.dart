@@ -2,13 +2,18 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gtv_mail/screens/compose_mail.dart';
+import 'package:gtv_mail/screens/detail_mail.dart';
+import '../models/mail.dart';
+import '../models/user.dart';
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/not_found_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   errorBuilder: (BuildContext context, GoRouterState state) {
-    return NotFoundScreen(url: state.uri.path,);
+    return NotFoundScreen(
+      url: state.uri.path,
+    );
   },
   redirect: (context, state) {
     final isLoggedIn = FirebaseAuth.instance.currentUser != null;
@@ -22,21 +27,39 @@ final GoRouter appRouter = GoRouter(
   },
   routes: <RouteBase>[
     GoRoute(
-      name: 'home',
-      path: '/',
-      builder: (BuildContext context, GoRouterState state) {
-        return StreamBuilder<User?>(
-          stream: FirebaseAuth.instance.authStateChanges(),
-          builder: (context, snapshot) {
-            if (snapshot.hasData && FirebaseAuth.instance.currentUser!.photoURL != null) {
-              return const HomeScreen();
-            } else {
-              return const LoginScreen();
-            }
-          },
-        );
-      },
-    ),
+        name: 'home',
+        path: '/',
+        builder: (BuildContext context, GoRouterState state) {
+          return StreamBuilder<User?>(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData &&
+                  FirebaseAuth.instance.currentUser!.photoURL != null) {
+                return const HomeScreen();
+              } else {
+                return const LoginScreen();
+              }
+            },
+          );
+        },
+        routes: [
+          GoRoute(
+              name: 'detail',
+              path: '/detail/:id',
+              builder: (BuildContext context, GoRouterState state) {
+                final extra = state.extra as Map<String, dynamic>?;
+                if (extra == null || !extra.containsKey('mail') || !extra.containsKey('senderInfo')) {
+                  return NotFoundScreen(
+                    url: state.uri.path,
+                  );
+                }
+                return DetailMail(
+                    id: state.pathParameters['id']!,
+                  mail: extra['mail'] as Mail,
+                  sender: extra['senderInfo'] as MyUser,
+                );
+              })
+        ]),
     GoRoute(
       name: 'compose',
       path: '/compose',
