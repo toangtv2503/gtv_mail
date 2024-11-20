@@ -74,5 +74,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+    <string>GTV Mail need permission to take user profile image</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>GTV Mail need permission to choose user profile image</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>GTV Mail need permission to capture user profile image</string>
 </dict>
 </plist>

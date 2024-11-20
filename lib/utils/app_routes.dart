@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gtv_mail/screens/compose_mail.dart';
 import 'package:gtv_mail/screens/detail_mail.dart';
+import 'package:gtv_mail/screens/user_profile_screen.dart';
 import '../models/mail.dart';
 import '../models/user.dart';
 import '../screens/home_screen.dart';
@@ -57,6 +58,14 @@ final GoRouter appRouter = GoRouter(
                     id: state.pathParameters['id']!,
                   mail: extra['mail'] as Mail,
                   sender: extra['senderInfo'] as MyUser,
+                );
+              }),
+          GoRoute(
+              name: 'profile',
+              path: '/profile/:id',
+              builder: (BuildContext context, GoRouterState state) {
+                return UserProfileScreen(
+                  id: state.pathParameters['id']!,
                 );
               })
         ]),

@@ -1,3 +1,4 @@
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:country_flags/country_flags.dart';
@@ -47,44 +48,18 @@ class _RegisterFormState extends State<RegisterForm> {
   }
 
   void _showPhoneExistsDialog() {
-    showDialog(
+    showOkAlertDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Phone Number Exists'),
-          content: const Text(
-              'Your phone number already exists. Please use a different phone number.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
+      title: "Phone Number Exists",
+      message: "Your phone number already exists. Please use a different phone number.",
     );
   }
 
   void _showEmailExistsDialog() {
-    showDialog(
+    showOkAlertDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Email Exists'),
-          content: const Text(
-              'Your email address already exists. Please use a different email address.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
+      title: "Email Exists",
+      message: "Your email address already exists. Please use a different email address.",
     );
   }
 
@@ -149,19 +124,10 @@ class _RegisterFormState extends State<RegisterForm> {
           phoneNumber: phoneNumber,
           verificationCompleted: (_) {},
           verificationFailed: (FirebaseAuthException e) {
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text("Verification Failed"),
-                content: const Text(
-                    "Your phone number not support. Please try another one."),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("OK"),
-                  ),
-                ],
-              ),
+            showOkAlertDialog(
+            context: context,
+            title: "Verification Failed",
+            message: "Your phone number not support. Please try another one.",
             );
           },
           codeSent: (String verificationId, int? resendToken) async {
@@ -197,18 +163,10 @@ class _RegisterFormState extends State<RegisterForm> {
                   _isLoading = false;
                 });
 
-                showDialog(
+                showOkAlertDialog(
                   context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text("Verification Failed"),
-                    content: const Text("Your OTP code is wrong."),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("OK"),
-                      ),
-                    ],
-                  ),
+                  title: "Verification Failed",
+                  message: "Your OTP code is wrong.",
                 );
               }
             }

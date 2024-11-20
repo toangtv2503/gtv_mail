@@ -17,11 +17,12 @@ class MailService {
   Future<List<Mail>> fetchMails() async {
     final querySnapshot = await FirebaseFirestore.instance
         .collection("mails")
+        .orderBy("sentDate", descending: true)
         .get();
 
     return querySnapshot.docs.map((doc) {
       return Mail.fromJson(doc.data());
-    }).toList().reversed.toList();
+    }).toList();
   }
 
   Stream<List<Mail>> streamMailsByUser(String userEmail) {
@@ -60,11 +61,10 @@ class MailService {
         addMails(ccSnapshot);
         addMails(bccSnapshot);
 
-        return uniqueMails.toList().reversed.toList();
+        return uniqueMails.toList()..sort((a, b) => b.sentDate!.compareTo(a.sentDate!));
       },
     );
   }
-
 
   bool isPrimaryMail(Mail mail) {
     return !mail.isSpam && !mail.isDelete && !mail.isHidden;

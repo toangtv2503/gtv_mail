@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:math';
 
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:file_picker/file_picker.dart';
@@ -16,7 +18,7 @@ import 'package:open_file/open_file.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:textfield_tags/textfield_tags.dart';
 import 'package:uuid/uuid.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../services/mail_service.dart';
 import '../utils/button_data.dart';
@@ -35,6 +37,7 @@ class _ComposeMailState extends State<ComposeMail> {
   late SharedPreferences prefs;
   final TextEditingController _fromController = TextEditingController();
   var _key = GlobalKey<FormState>();
+  bool isSending = false;
   String? _subject;
   bool isShowMore = false;
   List<Attachment> attachments = [];
@@ -63,48 +66,21 @@ class _ComposeMailState extends State<ComposeMail> {
     super.dispose();
   }
 
-  String formatFileSize(int sizeInBytes) {
-    if (sizeInBytes < 1024) {
-      return '$sizeInBytes B';
-    } else if (sizeInBytes < 1024 * 1024) {
-      return '${(sizeInBytes / 1024).toStringAsFixed(2)} KB';
-    } else if (sizeInBytes < 1024 * 1024 * 1024) {
-      return '${(sizeInBytes / (1024 * 1024)).toStringAsFixed(2)} MB';
-    } else {
-      return '${(sizeInBytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
-    }
-  }
-
-  void _handleDeleteFile(Attachment attachment) {
-    showDialog(
+  void _handleDeleteFile(Attachment attachment) async {
+      final result = await showOkCancelAlertDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Attachment'),
-          content:
-              Text('Are you sure you want to delete "${attachment.fileName}"?'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  attachments.remove(attachment);
-                  fileCached
-                      .removeWhere((cached) => cached.path == attachment.url);
-                });
-                Navigator.of(context).pop();
-              },
-              child: const Text('Yes'),
-            ),
-          ],
-        );
-      },
+      title: 'Delete Attachment',
+      message: 'Are you sure you want to delete "${attachment.fileName}"?',
+      okLabel: 'Yes',
+      cancelLabel: 'Cancel',
     );
+
+    if (result.name == "ok") {
+      setState(() {
+        attachments.remove(attachment);
+        fileCached.removeWhere((cached) => cached.path == attachment.url);
+      });
+    }
   }
 
   void _openFile(Attachment attachment) async {
@@ -113,22 +89,10 @@ class _ComposeMailState extends State<ComposeMail> {
       final result = await OpenFile.open(filePath);
 
       if (result.type != ResultType.done) {
-        showDialog(
+        showOkAlertDialog(
           context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Error'),
-              content: const Text('Could not open the file.'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('OK'),
-                ),
-              ],
-            );
-          },
+          title: "Error",
+          message: "Could not open the file.",
         );
       }
     }
@@ -149,9 +113,12 @@ class _ComposeMailState extends State<ComposeMail> {
         }
 
         for (var file in result.files) {
-          if (!attachments.any((attachment) => attachment.fileName == file.name)) {
+          if (!attachments
+              .any((attachment) => attachment.fileName == file.name)) {
             attachments.add(Attachment(
-              url: file.path,
+              url: kIsWeb && file.bytes != null
+                  ? base64Encode(file.bytes!)
+                  : file.path,
               fileName: file.name,
               extension: file.extension,
               size: file.size,
@@ -180,6 +147,10 @@ class _ComposeMailState extends State<ComposeMail> {
         return;
       }
 
+      setState(() {
+        isSending = true;
+      });
+
       List<Attachment> sendAttachments = [];
       if (attachments.isNotEmpty) {
         sendAttachments = await fileService.mapFilesToAttachments(fileCached);
@@ -195,7 +166,7 @@ class _ComposeMailState extends State<ComposeMail> {
         bcc: bccEmails.isEmpty ? null : bccEmails,
         body: _bodyController.document,
         sentDate: DateTime.now(),
-        attachments: sendAttachments.isNotEmpty ?  sendAttachments: null,
+        attachments: sendAttachments.isNotEmpty ? sendAttachments : null,
       );
 
       await mailService.sendEmail(newMail);
@@ -245,7 +216,13 @@ class _ComposeMailState extends State<ComposeMail> {
           IconButton(
               onPressed: _handleAttachment, icon: const Icon(Icons.attachment)),
           IconButton(
-              onPressed: _handleSend, icon: const Icon(Icons.send_outlined)),
+              onPressed: _handleSend,
+              icon: isSending
+                  ? Lottie.asset(
+                      'assets/lottiefiles/circle_loading.json',
+                      fit: BoxFit.fill,
+                    )
+                  : const Icon(Icons.send_outlined)),
           IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz))
         ],
       ),
@@ -834,7 +811,7 @@ class _ComposeMailState extends State<ComposeMail> {
                   ),
                 ),
               ),
-              if (attachments.isNotEmpty && !kIsWeb)
+              if (attachments.isNotEmpty)
                 Expanded(
                     flex: 1,
                     child: SingleChildScrollView(
@@ -860,9 +837,13 @@ class _ComposeMailState extends State<ComposeMail> {
                                       padding: const EdgeInsets.all(8.0),
                                       child: Column(
                                         children: [
-                                          ClipOval(
-                                            child: Image.asset(
-                                              "assets/images/attachment.png",
+                                          Image.asset(
+                                            "assets/images/${attachment.extension}.png",
+                                            height: 42,
+                                            errorBuilder:
+                                                (context, error, stackTrace) =>
+                                                    Image.asset(
+                                              "assets/images/unknown.png",
                                               height: 42,
                                             ),
                                           ), // Attachment icon
@@ -872,8 +853,8 @@ class _ComposeMailState extends State<ComposeMail> {
                                                 fontWeight: FontWeight.bold),
                                             overflow: TextOverflow.ellipsis,
                                           ),
-                                          Text(
-                                              formatFileSize(attachment.size!)),
+                                          Text(fileService.formatFileSize(
+                                              attachment.size!)),
                                         ],
                                       ),
                                     ),

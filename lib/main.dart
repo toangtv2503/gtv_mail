@@ -1,3 +1,4 @@
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,18 @@ void main() async{
   );
 
   usePathUrlStrategy();
+
+  AdaptiveDialog.instance.updateConfiguration(
+    macOS: AdaptiveDialogMacOSConfiguration(
+      applicationIcon: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Image.asset(
+          'assets/images/logo.png',
+        ),
+      ),
+    ),
+    defaultStyle: AdaptiveStyle.iOS
+  );
 
   runApp(const MyApp());
 }

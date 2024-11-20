@@ -1,12 +1,21 @@
+import 'dart:io';
+
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:gtv_mail/models/user.dart';
+import 'package:gtv_mail/services/file_service.dart';
 import 'package:lottie/lottie.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
 
 import '../models/mail.dart';
+import '../utils/app_theme.dart';
 
 class DetailMail extends StatefulWidget {
   DetailMail(
@@ -64,6 +73,34 @@ class _DetailMailState extends State<DetailMail> {
 
   void _handleForward() {}
 
+  void _openFile(attachment) async {
+    if (attachment.url != null) {
+      final uri = Uri.parse(attachment.url!);
+      final response = await http.get(uri);
+
+      print(attachment.toJson());
+
+      if (response.statusCode == 200) {
+        final tempDir = await getTemporaryDirectory();
+        final tempFilePath = '${tempDir.path}/${attachment.fileName}';
+
+        final file = File(tempFilePath);
+        await file.writeAsBytes(response.bodyBytes);
+
+        final result = await OpenFile.open(tempFilePath);
+
+        // Handle errors
+        if (result.type != ResultType.done) {
+          showOkAlertDialog(
+            context: context,
+            title: "Error",
+            message: "Could not open the file.",
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,10 +130,20 @@ class _DetailMailState extends State<DetailMail> {
           ),
           ListTile(
             leading: CircleAvatar(
+              backgroundColor: AppTheme.blueColor,
               child: CachedNetworkImage(
                 imageUrl: widget.sender.imageUrl!,
                 imageBuilder: (context, imageProvider) => Container(
                   decoration: BoxDecoration(
+                    border: const GradientBoxBorder(
+                      gradient: LinearGradient(colors: [
+                        AppTheme.redColor,
+                        AppTheme.greenColor,
+                        AppTheme.yellowColor,
+                        AppTheme.blueColor
+                      ]),
+                    ),
+                    shape: BoxShape.circle,
                     image: DecorationImage(image: imageProvider),
                   ),
                 ),
@@ -169,6 +216,7 @@ class _DetailMailState extends State<DetailMail> {
               ),
             ),
           Expanded(
+            flex: 5,
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Container(
@@ -194,8 +242,62 @@ class _DetailMailState extends State<DetailMail> {
               ),
             ),
           ),
+          if (widget.mail.attachments?.isNotEmpty ?? false)
+            Expanded(
+                flex: 1,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: widget.mail.attachments!.map((attachment) {
+                        return GestureDetector(
+                          onTap: () => _openFile(attachment),
+                          child: SingleChildScrollView(
+                            child: SizedBox(
+                              height: 100,
+                              width: 100,
+                              child: Card(
+                                elevation: 5.0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                      10.0), // Rounded corners
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column(
+                                    children: [
+                                      Image.asset(
+                                        "assets/images/${attachment.extension}.png",
+                                        height: 42,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Image.asset(
+                                          "assets/images/unknown.png",
+                                          height: 42,
+                                        ),
+                                      ), // // Attachment icon
+                                      Text(
+                                        attachment.fileName!,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(fileService
+                                          .formatFileSize(attachment.size!)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                )),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: SizedBox(
               height: 50,
               child: Row(

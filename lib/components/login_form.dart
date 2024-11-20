@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gtv_mail/models/user.dart';
@@ -58,19 +59,10 @@ class _LoginFormState extends State<LoginForm> {
             timeout: const Duration(seconds: 120),
             verificationCompleted: (_) {},
             verificationFailed: (FirebaseAuthException e) {
-              showDialog(
+                            showOkAlertDialog(
                 context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text("Verification Failed"),
-                  content: const Text(
-                      "An error occurred. Please try again."),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text("OK"),
-                    ),
-                  ],
-                ),
+                title: "Verification Failed",
+                message: "An error occurred. Please try again.",
               );
             },
             codeSent:
@@ -100,20 +92,16 @@ class _LoginFormState extends State<LoginForm> {
         setState(() {
           _isLoading = false;
         });
-        showDialog(
+        showOkAlertDialog(
           context: context,
-          builder: (context) => AlertDialog(
-            title: const Text("Wrong email or password"),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("OK"),
-              ),
-            ],
-          ),
+          title: "Wrong email or password",
         );
       }
     }
+  }
+
+  void _handleForgotPassword() async {
+
   }
 
   @override
@@ -170,7 +158,15 @@ class _LoginFormState extends State<LoginForm> {
             onSaved: (value) => password = value,
             textInputAction: TextInputAction.done,
           ),
-          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _handleForgotPassword,
+                child: const Text("Forgot password?"),
+              )
+            ],
+          ),
           ElevatedButton(
             onPressed: _handleLogin,
             child: _isLoading
