@@ -30,7 +30,7 @@ void main() async{
         ),
       ),
     ),
-    defaultStyle: AdaptiveStyle.iOS
+    defaultStyle: AdaptiveStyle.adaptive
   );
 
   runApp(const MyApp());

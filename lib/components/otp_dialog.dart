@@ -20,7 +20,7 @@ class _OtpDialogState extends State<OtpDialog> {
   final _focusNode = FocusNode();
 
   late Timer _timer;
-  int _remainingTime = 120;
+  int _remainingTime = 60;
 
   @override
   void initState() {

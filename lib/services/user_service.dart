@@ -58,9 +58,9 @@ class UserService {
 
   Future<void> signInWithCustomToken(String uid) async {
     try {
-      final response = await http.get(Uri.parse('https://us-central1-gtv-mail.cloudfunctions.net/generateCustomToken?uid=$uid'));
-      // final response = await http.get(Uri.parse(
-      //     'http://10.0.2.2:5001/gtv-mail/us-central1/generateCustomToken?uid=$uid'));
+      // final response = await http.get(Uri.parse('https://us-central1-gtv-mail.cloudfunctions.net/generateCustomToken?uid=$uid'));
+      final response = await http.get(Uri.parse(
+          'http://10.0.2.2:5001/gtv-mail/us-central1/generateCustomToken?uid=$uid'));
 
       if (response.statusCode == 200) {
         final customToken = json.decode(response.body)['customToken'];
@@ -103,6 +103,19 @@ class UserService {
 
     if (docSnapshot.exists) {
       return MyUser.fromJson(docSnapshot.data()!);
+    } else {
+      throw Exception('User not found');
+    }
+  }
+
+  Future<MyUser> getUserByEmail(String email) async {
+    final docSnapshot = await FirebaseFirestore.instance
+        .collection("users")
+        .where('email', isEqualTo: email)
+        .get();
+
+    if (docSnapshot.docs.isNotEmpty) {
+      return MyUser.fromJson(docSnapshot.docs.first.data());
     } else {
       throw Exception('User not found');
     }

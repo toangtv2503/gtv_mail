@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gtv_mail/screens/compose_mail.dart';
 import 'package:gtv_mail/screens/detail_mail.dart';
+import 'package:gtv_mail/screens/recover_password_screen.dart';
 import 'package:gtv_mail/screens/user_profile_screen.dart';
 import '../models/mail.dart';
 import '../models/user.dart';
@@ -45,6 +46,20 @@ final GoRouter appRouter = GoRouter(
         },
         routes: [
           GoRoute(
+            name: 'compose',
+            path: '/compose',
+            builder: (BuildContext context, GoRouterState state) {
+              final draftParam = state.uri.queryParameters['draft'];
+              if (draftParam == 'new') {
+                return ComposeMail(isDraft: false);
+              } else if (draftParam != null) {
+                return ComposeMail(draftId: draftParam);
+              } else {
+                return ComposeMail(isDraft: false);
+              }
+            },
+          ),
+          GoRoute(
               name: 'detail',
               path: '/detail/:id',
               builder: (BuildContext context, GoRouterState state) {
@@ -67,21 +82,13 @@ final GoRouter appRouter = GoRouter(
                 return UserProfileScreen(
                   id: state.pathParameters['id']!,
                 );
-              })
+              }),
+          GoRoute(
+              name: 'recover-password',
+              path: '/recover-password',
+              builder: (BuildContext context, GoRouterState state) {
+                return RecoverPasswordScreen();
+              }),
         ]),
-    GoRoute(
-      name: 'compose',
-      path: '/compose',
-      builder: (BuildContext context, GoRouterState state) {
-        final draftParam = state.uri.queryParameters['draft'];
-        if (draftParam == 'new') {
-          return ComposeMail(isDraft: false);
-        } else if (draftParam != null) {
-          return ComposeMail(draftId: draftParam);
-        } else {
-          return ComposeMail(isDraft: false);
-        }
-      },
-    ),
   ],
 );

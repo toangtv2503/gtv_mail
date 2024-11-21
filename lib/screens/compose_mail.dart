@@ -7,6 +7,7 @@ import 'package:email_validator/email_validator.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:gtv_mail/models/attachment.dart';
 import 'package:gtv_mail/models/mail.dart';
 import 'package:gtv_mail/models/user.dart';
@@ -21,6 +22,7 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../services/mail_service.dart';
+import '../utils/app_theme.dart';
 import '../utils/button_data.dart';
 
 class ComposeMail extends StatefulWidget {
@@ -252,11 +254,21 @@ class _ComposeMailState extends State<ComposeMail> {
                               },
                               child: ListTile(
                                 leading: CircleAvatar(
+                                  backgroundColor: AppTheme.blueColor,
                                   child: CachedNetworkImage(
                                     imageUrl: option.data.emoji,
                                     imageBuilder: (context, imageProvider) =>
                                         Container(
                                       decoration: BoxDecoration(
+                                        border: const GradientBoxBorder(
+                                          gradient: LinearGradient(colors: [
+                                            AppTheme.redColor,
+                                            AppTheme.greenColor,
+                                            AppTheme.yellowColor,
+                                            AppTheme.blueColor
+                                          ]),
+                                        ),
+                                        shape: BoxShape.circle,
                                         image: DecorationImage(
                                             image: imageProvider),
                                       ),
@@ -343,16 +355,26 @@ class _ComposeMailState extends State<ComposeMail> {
                                           inputFieldValues.onTagRemoved(tag),
                                       backgroundColor: tag.data.buttonColor,
                                       avatar: CircleAvatar(
+                                        backgroundColor: AppTheme.blueColor,
                                         child: CachedNetworkImage(
                                           imageUrl: tag.data.emoji,
                                           imageBuilder:
                                               (context, imageProvider) =>
-                                                  Container(
-                                            decoration: BoxDecoration(
-                                              image: DecorationImage(
-                                                  image: imageProvider),
-                                            ),
-                                          ),
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  border: const GradientBoxBorder(
+                                                    gradient: LinearGradient(colors: [
+                                                      AppTheme.redColor,
+                                                      AppTheme.greenColor,
+                                                      AppTheme.yellowColor,
+                                                      AppTheme.blueColor
+                                                    ]),
+                                                  ),
+                                                  shape: BoxShape.circle,
+                                                  image: DecorationImage(
+                                                      image: imageProvider),
+                                                ),
+                                              ),
                                           placeholder: (context, url) =>
                                               Lottie.asset(
                                             'assets/lottiefiles/circle_loading.json',
@@ -437,15 +459,25 @@ class _ComposeMailState extends State<ComposeMail> {
                                 },
                                 child: ListTile(
                                   leading: CircleAvatar(
+                                    backgroundColor: AppTheme.blueColor,
                                     child: CachedNetworkImage(
                                       imageUrl: option.data.emoji,
                                       imageBuilder: (context, imageProvider) =>
                                           Container(
-                                        decoration: BoxDecoration(
-                                          image: DecorationImage(
-                                              image: imageProvider),
-                                        ),
-                                      ),
+                                            decoration: BoxDecoration(
+                                              border: const GradientBoxBorder(
+                                                gradient: LinearGradient(colors: [
+                                                  AppTheme.redColor,
+                                                  AppTheme.greenColor,
+                                                  AppTheme.yellowColor,
+                                                  AppTheme.blueColor
+                                                ]),
+                                              ),
+                                              shape: BoxShape.circle,
+                                              image: DecorationImage(
+                                                  image: imageProvider),
+                                            ),
+                                          ),
                                       placeholder: (context, url) =>
                                           Lottie.asset(
                                         'assets/lottiefiles/circle_loading.json',
@@ -511,12 +543,22 @@ class _ComposeMailState extends State<ComposeMail> {
                                             inputFieldValues.onTagRemoved(tag),
                                         backgroundColor: tag.data.buttonColor,
                                         avatar: CircleAvatar(
+                                          backgroundColor: AppTheme.blueColor,
                                           child: CachedNetworkImage(
                                             imageUrl: tag.data.emoji,
                                             imageBuilder:
                                                 (context, imageProvider) =>
                                                     Container(
                                               decoration: BoxDecoration(
+                                                border: const GradientBoxBorder(
+                                                  gradient: LinearGradient(colors: [
+                                                    AppTheme.redColor,
+                                                    AppTheme.greenColor,
+                                                    AppTheme.yellowColor,
+                                                    AppTheme.blueColor
+                                                  ]),
+                                                ),
+                                                  shape: BoxShape.circle,
                                                 image: DecorationImage(
                                                     image: imageProvider),
                                               ),
@@ -606,15 +648,25 @@ class _ComposeMailState extends State<ComposeMail> {
                                 },
                                 child: ListTile(
                                   leading: CircleAvatar(
+                                    backgroundColor: AppTheme.blueColor,
                                     child: CachedNetworkImage(
                                       imageUrl: option.data.emoji,
                                       imageBuilder: (context, imageProvider) =>
                                           Container(
-                                        decoration: BoxDecoration(
-                                          image: DecorationImage(
-                                              image: imageProvider),
-                                        ),
-                                      ),
+                                            decoration: BoxDecoration(
+                                              border: const GradientBoxBorder(
+                                                gradient: LinearGradient(colors: [
+                                                  AppTheme.redColor,
+                                                  AppTheme.greenColor,
+                                                  AppTheme.yellowColor,
+                                                  AppTheme.blueColor
+                                                ]),
+                                              ),
+                                              shape: BoxShape.circle,
+                                              image: DecorationImage(
+                                                  image: imageProvider),
+                                            ),
+                                          ),
                                       placeholder: (context, url) =>
                                           Lottie.asset(
                                         'assets/lottiefiles/circle_loading.json',
@@ -680,16 +732,26 @@ class _ComposeMailState extends State<ComposeMail> {
                                             inputFieldValues.onTagRemoved(tag),
                                         backgroundColor: tag.data.buttonColor,
                                         avatar: CircleAvatar(
+                                          backgroundColor: AppTheme.blueColor,
                                           child: CachedNetworkImage(
                                             imageUrl: tag.data.emoji,
                                             imageBuilder:
                                                 (context, imageProvider) =>
-                                                    Container(
-                                              decoration: BoxDecoration(
-                                                image: DecorationImage(
-                                                    image: imageProvider),
-                                              ),
-                                            ),
+                                                Container(
+                                                  decoration: BoxDecoration(
+                                                    border: const GradientBoxBorder(
+                                                      gradient: LinearGradient(colors: [
+                                                        AppTheme.redColor,
+                                                        AppTheme.greenColor,
+                                                        AppTheme.yellowColor,
+                                                        AppTheme.blueColor
+                                                      ]),
+                                                    ),
+                                                    shape: BoxShape.circle,
+                                                    image: DecorationImage(
+                                                        image: imageProvider),
+                                                  ),
+                                                ),
                                             placeholder: (context, url) =>
                                                 Lottie.asset(
                                               'assets/lottiefiles/circle_loading.json',

@@ -158,7 +158,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   void _handleChangeAvatar() async {
     final result = await showModalActionSheet<String>(
       context: context,
-      style: AdaptiveStyle.material,
       actions: const [
         SheetAction(
           icon: Icons.camera_alt_outlined,

@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:go_router/go_router.dart';
+import 'package:gtv_mail/components/list_mail_component.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:gtv_mail/services/user_service.dart';
 import 'package:http/http.dart' as http;
@@ -56,7 +58,7 @@ class _LoginFormState extends State<LoginForm> {
         if (user.isEnable2FA) {
           await FirebaseAuth.instance.verifyPhoneNumber(
             phoneNumber: user.phone,
-            timeout: const Duration(seconds: 120),
+            timeout: const Duration(seconds: 60),
             verificationCompleted: (_) {},
             verificationFailed: (FirebaseAuthException e) {
                             showOkAlertDialog(
@@ -101,7 +103,8 @@ class _LoginFormState extends State<LoginForm> {
   }
 
   void _handleForgotPassword() async {
-
+    Navigator.pop(context);
+    var result = await context.pushNamed('recover-password');
   }
 
   @override
