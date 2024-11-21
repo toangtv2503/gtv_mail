@@ -64,6 +64,22 @@ class _HomeScreenState extends State<HomeScreen> {
     context.pushNamed('profile', pathParameters: {'id': user!.uid});
   }
 
+  void _handleDrawerMenu(int index, Map<String, dynamic> option) async {
+    if (option['title'] == "Settings") {
+      context.pushNamed('setting');
+      return;
+    }
+    setState(() {
+      currentIndex = index;
+      prefs.setInt('currentIndex', index);
+    });
+    Navigator.pop(context);
+
+    setState(() {
+      currentCategoryName = option['title'];
+    });
+  }
+
   Widget _buildEmailCategoriesMenu() {
     return Column(
       children: emailCategoriesMenu
@@ -79,17 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       selectedColor: AppTheme.greenColor,
                       leading: option['icon'] as Icon,
                       title: Text(option['title']),
-                      onTap: () {
-                        setState(() {
-                          currentIndex = index;
-                          prefs.setInt('currentIndex', index);
-                        });
-                        Navigator.pop(context);
-
-                        setState(() {
-                          currentCategoryName = option['title'];
-                        });
-                      },
+                      onTap: () => _handleDrawerMenu(index, option),
                     ),
             );
           })

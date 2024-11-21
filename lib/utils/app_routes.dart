@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:gtv_mail/screens/compose_mail.dart';
 import 'package:gtv_mail/screens/detail_mail.dart';
 import 'package:gtv_mail/screens/recover_password_screen.dart';
+import 'package:gtv_mail/screens/setting_screen.dart';
 import 'package:gtv_mail/screens/user_profile_screen.dart';
 import '../models/mail.dart';
 import '../models/user.dart';
@@ -87,7 +88,13 @@ final GoRouter appRouter = GoRouter(
               name: 'recover-password',
               path: '/recover-password',
               builder: (BuildContext context, GoRouterState state) {
-                return RecoverPasswordScreen();
+                return const RecoverPasswordScreen();
+              }),
+          GoRoute(
+              name: 'setting',
+              path: '/setting',
+              builder: (BuildContext context, GoRouterState state) {
+                return const SettingScreen();
               }),
         ]),
   ],
