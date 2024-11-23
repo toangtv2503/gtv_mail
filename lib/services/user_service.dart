@@ -58,9 +58,9 @@ class UserService {
 
   Future<void> signInWithCustomToken(String uid) async {
     try {
-      final response = await http.get(Uri.parse('https://us-central1-gtv-mail.cloudfunctions.net/generateCustomToken?uid=$uid'));
-      // final response = await http.get(Uri.parse(
-      //     'http://10.0.2.2:5001/gtv-mail/us-central1/generateCustomToken?uid=$uid'));
+      // final response = await http.get(Uri.parse('https://us-central1-gtv-mail.cloudfunctions.net/generateCustomToken?uid=$uid'));
+      final response = await http.get(Uri.parse(
+          'http://10.0.2.2:5001/gtv-mail/us-central1/generateCustomToken?uid=$uid'));
 
       if (response.statusCode == 200) {
         final customToken = json.decode(response.body)['customToken'];

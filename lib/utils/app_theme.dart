@@ -1,4 +1,7 @@
+import 'package:adaptive_dialog/adaptive_dialog.dart';
+import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:settings_ui/settings_ui.dart';
 
 class AppTheme {
   // Light Theme Colors
@@ -133,3 +136,23 @@ class AppTheme {
     ),
   );
 }
+
+final settingTheme = <String, DevicePlatform>{
+  'Default': DevicePlatform.device,
+  'Android': DevicePlatform.android,
+  'iOS': DevicePlatform.iOS,
+  'Web': DevicePlatform.web,
+};
+
+final dialogTheme = <String, AdaptiveStyle>{
+  'Default': AdaptiveStyle.adaptive,
+  'Android': AdaptiveStyle.material,
+  'iOS': AdaptiveStyle.iOS,
+  'macOS': AdaptiveStyle.macOS,
+};
+
+final lightTheme = <String, AdaptiveThemeMode> {
+  'Default': AdaptiveThemeMode.system,
+  'Light': AdaptiveThemeMode.light,
+  'Dark': AdaptiveThemeMode.dark,
+};

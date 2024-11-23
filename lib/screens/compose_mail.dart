@@ -22,6 +22,7 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../services/mail_service.dart';
+import '../utils/app_fonts.dart';
 import '../utils/app_theme.dart';
 import '../utils/button_data.dart';
 
@@ -35,6 +36,9 @@ class ComposeMail extends StatefulWidget {
 }
 
 class _ComposeMailState extends State<ComposeMail> {
+  late String _defaultFontSize;
+  late String _defaultFontFamily;
+
   final QuillController _bodyController = QuillController.basic();
   late SharedPreferences prefs;
   final TextEditingController _fromController = TextEditingController();
@@ -49,6 +53,8 @@ class _ComposeMailState extends State<ComposeMail> {
     prefs = await SharedPreferences.getInstance();
     setState(() {
       _fromController.text = prefs.getString('email') ?? '';
+      _defaultFontSize = prefs.getString('default_font_size') ?? "Medium";
+      _defaultFontFamily = prefs.getString('default_font_family') ?? "Arial";
     });
   }
 
@@ -69,7 +75,7 @@ class _ComposeMailState extends State<ComposeMail> {
   }
 
   void _handleDeleteFile(Attachment attachment) async {
-      final result = await showOkCancelAlertDialog(
+    final result = await showOkCancelAlertDialog(
       context: context,
       title: 'Delete Attachment',
       message: 'Are you sure you want to delete "${attachment.fileName}"?',
@@ -360,21 +366,22 @@ class _ComposeMailState extends State<ComposeMail> {
                                           imageUrl: tag.data.emoji,
                                           imageBuilder:
                                               (context, imageProvider) =>
-                                              Container(
-                                                decoration: BoxDecoration(
-                                                  border: const GradientBoxBorder(
-                                                    gradient: LinearGradient(colors: [
+                                                  Container(
+                                            decoration: BoxDecoration(
+                                              border: const GradientBoxBorder(
+                                                gradient: LinearGradient(
+                                                    colors: [
                                                       AppTheme.redColor,
                                                       AppTheme.greenColor,
                                                       AppTheme.yellowColor,
                                                       AppTheme.blueColor
                                                     ]),
-                                                  ),
-                                                  shape: BoxShape.circle,
-                                                  image: DecorationImage(
-                                                      image: imageProvider),
-                                                ),
                                               ),
+                                              shape: BoxShape.circle,
+                                              image: DecorationImage(
+                                                  image: imageProvider),
+                                            ),
+                                          ),
                                           placeholder: (context, url) =>
                                               Lottie.asset(
                                             'assets/lottiefiles/circle_loading.json',
@@ -464,20 +471,20 @@ class _ComposeMailState extends State<ComposeMail> {
                                       imageUrl: option.data.emoji,
                                       imageBuilder: (context, imageProvider) =>
                                           Container(
-                                            decoration: BoxDecoration(
-                                              border: const GradientBoxBorder(
-                                                gradient: LinearGradient(colors: [
-                                                  AppTheme.redColor,
-                                                  AppTheme.greenColor,
-                                                  AppTheme.yellowColor,
-                                                  AppTheme.blueColor
-                                                ]),
-                                              ),
-                                              shape: BoxShape.circle,
-                                              image: DecorationImage(
-                                                  image: imageProvider),
-                                            ),
+                                        decoration: BoxDecoration(
+                                          border: const GradientBoxBorder(
+                                            gradient: LinearGradient(colors: [
+                                              AppTheme.redColor,
+                                              AppTheme.greenColor,
+                                              AppTheme.yellowColor,
+                                              AppTheme.blueColor
+                                            ]),
                                           ),
+                                          shape: BoxShape.circle,
+                                          image: DecorationImage(
+                                              image: imageProvider),
+                                        ),
+                                      ),
                                       placeholder: (context, url) =>
                                           Lottie.asset(
                                         'assets/lottiefiles/circle_loading.json',
@@ -551,14 +558,15 @@ class _ComposeMailState extends State<ComposeMail> {
                                                     Container(
                                               decoration: BoxDecoration(
                                                 border: const GradientBoxBorder(
-                                                  gradient: LinearGradient(colors: [
-                                                    AppTheme.redColor,
-                                                    AppTheme.greenColor,
-                                                    AppTheme.yellowColor,
-                                                    AppTheme.blueColor
-                                                  ]),
+                                                  gradient: LinearGradient(
+                                                      colors: [
+                                                        AppTheme.redColor,
+                                                        AppTheme.greenColor,
+                                                        AppTheme.yellowColor,
+                                                        AppTheme.blueColor
+                                                      ]),
                                                 ),
-                                                  shape: BoxShape.circle,
+                                                shape: BoxShape.circle,
                                                 image: DecorationImage(
                                                     image: imageProvider),
                                               ),
@@ -653,20 +661,20 @@ class _ComposeMailState extends State<ComposeMail> {
                                       imageUrl: option.data.emoji,
                                       imageBuilder: (context, imageProvider) =>
                                           Container(
-                                            decoration: BoxDecoration(
-                                              border: const GradientBoxBorder(
-                                                gradient: LinearGradient(colors: [
-                                                  AppTheme.redColor,
-                                                  AppTheme.greenColor,
-                                                  AppTheme.yellowColor,
-                                                  AppTheme.blueColor
-                                                ]),
-                                              ),
-                                              shape: BoxShape.circle,
-                                              image: DecorationImage(
-                                                  image: imageProvider),
-                                            ),
+                                        decoration: BoxDecoration(
+                                          border: const GradientBoxBorder(
+                                            gradient: LinearGradient(colors: [
+                                              AppTheme.redColor,
+                                              AppTheme.greenColor,
+                                              AppTheme.yellowColor,
+                                              AppTheme.blueColor
+                                            ]),
                                           ),
+                                          shape: BoxShape.circle,
+                                          image: DecorationImage(
+                                              image: imageProvider),
+                                        ),
+                                      ),
                                       placeholder: (context, url) =>
                                           Lottie.asset(
                                         'assets/lottiefiles/circle_loading.json',
@@ -737,21 +745,22 @@ class _ComposeMailState extends State<ComposeMail> {
                                             imageUrl: tag.data.emoji,
                                             imageBuilder:
                                                 (context, imageProvider) =>
-                                                Container(
-                                                  decoration: BoxDecoration(
-                                                    border: const GradientBoxBorder(
-                                                      gradient: LinearGradient(colors: [
+                                                    Container(
+                                              decoration: BoxDecoration(
+                                                border: const GradientBoxBorder(
+                                                  gradient: LinearGradient(
+                                                      colors: [
                                                         AppTheme.redColor,
                                                         AppTheme.greenColor,
                                                         AppTheme.yellowColor,
                                                         AppTheme.blueColor
                                                       ]),
-                                                    ),
-                                                    shape: BoxShape.circle,
-                                                    image: DecorationImage(
-                                                        image: imageProvider),
-                                                  ),
                                                 ),
+                                                shape: BoxShape.circle,
+                                                image: DecorationImage(
+                                                    image: imageProvider),
+                                              ),
+                                            ),
                                             placeholder: (context, url) =>
                                                 Lottie.asset(
                                               'assets/lottiefiles/circle_loading.json',
@@ -846,7 +855,28 @@ class _ComposeMailState extends State<ComposeMail> {
               ),
               QuillSimpleToolbar(
                 controller: _bodyController,
-                configurations: const QuillSimpleToolbarConfigurations(
+                configurations: QuillSimpleToolbarConfigurations(
+                    buttonOptions: QuillSimpleToolbarButtonOptions(
+                        fontSize: QuillToolbarFontSizeButtonOptions(rawItemsMap: const {
+                          'Small': '8',
+                          'Normal': '14',
+                          'Medium': '24.5',
+                          'Large': '46',
+                          'Huge': '64',
+                          'Clear': '0',
+                        },
+                          initialValue: _defaultFontSize,
+                          onSelected: (value) => setState(() {
+                            _defaultFontSize = value;
+                          }),
+                        ),
+                        fontFamily: QuillToolbarFontFamilyButtonOptions(
+                          rawItemsMap: appFonts,
+                          initialValue: _defaultFontFamily,
+                          onSelected: (value) => setState(() {
+                            _defaultFontFamily = value;
+                          }),
+                        )),
                     multiRowsDisplay: false,
                     showSmallButton: true,
                     showLineHeightButton: true,
@@ -860,18 +890,36 @@ class _ComposeMailState extends State<ComposeMail> {
               Expanded(
                 flex: 4,
                 child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: QuillEditor.basic(
-                    controller: _bodyController,
-                    configurations: const QuillEditorConfigurations(
-                      placeholder: "Body",
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Theme.of(context).primaryColor,
                     ),
-                  ),
-                ),
+                    padding: const EdgeInsets.all(8),
+                    child: QuillEditor.basic(
+                      controller: _bodyController,
+                      configurations: QuillEditorConfigurations(
+                        placeholder: "Body",
+                        customStyles: DefaultStyles(
+                          paragraph: DefaultTextBlockStyle(
+                            TextStyle(
+                              fontSize: {
+                                'Small': 8,
+                                'Normal': 14,
+                                'Medium': 24.5,
+                                'Large': 46,
+                                'Huge': 64,
+                                'Clear': 0,
+                              }[_defaultFontSize]?.toDouble() ?? 14.0,
+                              fontFamily: _defaultFontFamily,
+                            ),
+                            HorizontalSpacing(0.0, 0.0),
+                            VerticalSpacing(10.0, 10.0),
+                            VerticalSpacing(1.5, 1.5),
+                            null,
+                          ),
+                        ),
+                      ),
+                    )),
               ),
               if (attachments.isNotEmpty)
                 Expanded(

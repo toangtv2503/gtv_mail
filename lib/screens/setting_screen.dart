@@ -6,8 +6,11 @@ import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:gtv_mail/utils/app_fonts.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../utils/app_theme.dart';
 
 class SettingScreen extends StatefulWidget {
   const SettingScreen({super.key});
@@ -22,15 +25,20 @@ class _SettingScreenState extends State<SettingScreen> {
   void init() async {
     prefs = await SharedPreferences.getInstance();
     setState(() {
+      // theme
       currentSettingTheme = prefs.getString('setting_theme') ?? 'Default';
       selectedSettingTheme =
-          _settingTheme[currentSettingTheme] ?? DevicePlatform.device;
+          settingTheme[currentSettingTheme] ?? DevicePlatform.device;
 
       currentDialogTheme = prefs.getString('dialog_theme') ?? 'Default';
       selectedDialogTheme =
-          _dialogTheme[currentDialogTheme] ?? AdaptiveStyle.adaptive;
+          dialogTheme[currentDialogTheme] ?? AdaptiveStyle.adaptive;
 
       currentLightTheme = jsonDecode(prefs.getString(AdaptiveTheme.prefKey)!)['theme_mode'] ?? 2;
+
+      //font
+      currentFontSize = prefs.getString('default_font_size') ?? 'Medium';
+      currentFontFamily = prefs.getString('default_font_family') ?? 'Arial';
     });
   }
 
@@ -40,25 +48,18 @@ class _SettingScreenState extends State<SettingScreen> {
     super.initState();
   }
 
-  final _settingTheme = <String, DevicePlatform>{
-    'Default': DevicePlatform.device,
-    'Android': DevicePlatform.android,
-    'iOS': DevicePlatform.iOS,
-    'Web': DevicePlatform.web,
-  };
+  // theme
   DevicePlatform selectedSettingTheme = DevicePlatform.device;
   String currentSettingTheme = 'Default';
 
-  final _dialogTheme = <String, AdaptiveStyle>{
-    'Default': AdaptiveStyle.adaptive,
-    'Android': AdaptiveStyle.material,
-    'iOS': AdaptiveStyle.iOS,
-    'macOS': AdaptiveStyle.macOS,
-  };
   AdaptiveStyle selectedDialogTheme = AdaptiveStyle.adaptive;
   String currentDialogTheme = 'Default';
 
   int currentLightTheme = 2;
+
+  //font
+  String currentFontSize = "Medium";
+  String currentFontFamily = "Arial";
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +111,7 @@ class _SettingScreenState extends State<SettingScreen> {
                     prefs.setString('setting_theme', result);
                     setState(() {
                       currentSettingTheme = result;
-                      selectedSettingTheme = _settingTheme[result]!;
+                      selectedSettingTheme = settingTheme[result]!;
                     });
                   }
                 },
@@ -151,7 +152,7 @@ class _SettingScreenState extends State<SettingScreen> {
                     prefs.setString('dialog_theme', result);
                     setState(() {
                       currentDialogTheme = result;
-                      selectedDialogTheme = _dialogTheme[result]!;
+                      selectedDialogTheme = dialogTheme[result]!;
 
                       AdaptiveDialog.instance.updateConfiguration(
                           macOS: AdaptiveDialogMacOSConfiguration(
@@ -198,6 +199,71 @@ class _SettingScreenState extends State<SettingScreen> {
                   },
                   loading: false,
                 ),
+              ),
+            ],
+          ),
+
+          SettingsSection(
+            title: const Text('Font'),
+            tiles: <SettingsTile>[
+              SettingsTile.navigation(
+                leading: const Icon(Icons.text_fields),
+                title: const Text('Font size'),
+                value: Text(currentFontSize),
+                onPressed: (context) async {
+                  final result = await showModalActionSheet<String>(
+                    context: context,
+                    title: 'Font size',
+                    actions: [
+                      const SheetAction(
+                        label: 'Small',
+                        key: 'Small',
+                      ),
+                      const SheetAction(
+                        label: 'Normal',
+                        key: 'Normal',
+                      ),
+                      const SheetAction(
+                        label: 'Medium',
+                        key: 'Medium',
+                      ),
+                      const SheetAction(
+                        label: 'Large',
+                        key: 'Large',
+                      ),
+                      const SheetAction(
+                        label: 'Huge',
+                        key: 'Huge',
+                      ),
+                    ],
+                  );
+
+                  if (result != null) {
+                    prefs.setString('default_font_size', result);
+                    setState(() {
+                      currentFontSize = result;
+                    });
+                  }
+                },
+              ),
+              SettingsTile.navigation(
+                leading: const Icon(Icons.type_specimen),
+                title: const Text('Font Family'),
+                value: Text(currentFontFamily),
+                onPressed: (context) async {
+                  final result = await showModalActionSheet<String>(
+                    context: context,
+                    title: 'Font Family',
+                    actions: appFonts.values.map((font) => SheetAction(label: font, key: font)).toList()
+                  );
+
+                  if (result != null) {
+                    prefs.setString('default_font_family', result);
+                    setState(() {
+                      currentFontFamily = result;
+                    });
+                  }
+                },
               ),
             ],
           ),

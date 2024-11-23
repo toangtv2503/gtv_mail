@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -6,9 +8,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:gtv_mail/utils/app_routes.dart';
 import 'package:gtv_mail/utils/app_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 
-void main() async{
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   SystemChrome.setPreferredOrientations([
@@ -21,6 +24,8 @@ void main() async{
 
   usePathUrlStrategy();
 
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
   AdaptiveDialog.instance.updateConfiguration(
     macOS: AdaptiveDialogMacOSConfiguration(
       applicationIcon: ClipRRect(
@@ -30,14 +35,23 @@ void main() async{
         ),
       ),
     ),
-    defaultStyle: AdaptiveStyle.adaptive
+    defaultStyle: dialogTheme[prefs.getString('dialog_theme') ?? 'Default'] ??
+        AdaptiveStyle.adaptive,
   );
 
-  runApp(const MyApp());
+  runApp(MyApp(
+    initialTheme: [
+      AdaptiveThemeMode.light,
+      AdaptiveThemeMode.dark,
+      AdaptiveThemeMode.system
+    ][jsonDecode(prefs.getString(AdaptiveTheme.prefKey)!)['theme_mode'] ?? 2],
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  MyApp({super.key, required this.initialTheme});
+
+  AdaptiveThemeMode initialTheme;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +59,7 @@ class MyApp extends StatelessWidget {
       debugShowFloatingThemeButton: true,
       light: AppTheme.lightTheme,
       dark: AppTheme.darkTheme,
-      initial: AdaptiveThemeMode.system,
+      initial: initialTheme,
       builder: (theme, darkTheme) => MaterialApp.router(
         title: "GTV Mail",
         debugShowCheckedModeBanner: false,
@@ -56,5 +70,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-
