@@ -25,13 +25,20 @@ jobs:
       # Install dependencies
       - run: flutter pub get
 
-      # Debug pub-cache path
-      - name: Debug pub-cache path
+      # Debug home and cache directory
+      - name: Debug home and pub-cache
         run: |
-          echo "Checking for notification_permissions in pub-cache..."
-          find $PUB_CACHE -name "notification_permissions*"
+          echo "HOME directory: $HOME"
+          echo "Listing directories in $HOME:"
+          ls -R $HOME
         env:
           PUB_CACHE: $HOME/.pub-cache
+
+      # Verify notification_permissions location
+      - name: Verify notification_permissions path
+        run: find $PUB_CACHE -name "notification_permissions*"
+        env:
+          PUB_CACHE: /Users/runner/hostedtoolcache/flutter/3.24.3-stable/arm64/.pub-cache
 
       # Add namespace to notification_permissions
       - name: Add namespace to notification_permissions
@@ -46,7 +53,7 @@ jobs:
             exit 1
           fi
         env:
-          PUB_CACHE: $HOME/.pub-cache
+          PUB_CACHE: /Users/runner/hostedtoolcache/flutter/3.24.3-stable/arm64/.pub-cache
 
 
       # Android release build
