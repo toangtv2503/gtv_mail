@@ -84,5 +84,9 @@
     <string>GTV Mail will send notifications about new mails.</string>
     <key>PermissionGroupNotification</key>
     <string>GTV Mail will send notifications about new mails.</string>
+    <key>UIBackgroundModes</key>
+        <array>
+            <string>remote-notification</string>
+        </array>
 </dict>
 </plist>

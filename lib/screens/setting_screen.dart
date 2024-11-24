@@ -1,15 +1,14 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:app_settings/app_settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gtv_mail/utils/app_fonts.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:notification_permissions/notification_permissions.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,23 +21,20 @@ class SettingScreen extends StatefulWidget {
   State<SettingScreen> createState() => _SettingScreenState();
 }
 
-class _SettingScreenState extends State<SettingScreen> with WidgetsBindingObserver{
+class _SettingScreenState extends State<SettingScreen>
+    with WidgetsBindingObserver {
   late SharedPreferences prefs;
 
   void init() async {
     prefs = await SharedPreferences.getInstance();
 
-    var notificationStatus = await Permission.notification.status;
-    NotificationSettings settings = await FirebaseMessaging.instance.getNotificationSettings();
     WidgetsBinding.instance.addObserver(this);
+    var status =
+        await NotificationPermissions.getNotificationPermissionStatus();
 
     setState(() {
       // general
-      if (Platform.isIOS) {
-        isTurnOnNotification = settings.authorizationStatus == AuthorizationStatus.authorized;
-      } else {
-        isTurnOnNotification = notificationStatus.isGranted;
-      }
+      isTurnOnNotification = status == PermissionStatus.granted;
 
       // theme
       currentSettingTheme = prefs.getString('setting_theme') ?? 'Default';
@@ -49,13 +45,14 @@ class _SettingScreenState extends State<SettingScreen> with WidgetsBindingObserv
       selectedDialogTheme =
           dialogTheme[currentDialogTheme] ?? AdaptiveStyle.adaptive;
 
-      currentLightTheme = jsonDecode(prefs.getString(AdaptiveTheme.prefKey)!)['theme_mode'] ?? 2;
+      currentLightTheme =
+          jsonDecode(prefs.getString(AdaptiveTheme.prefKey)!)['theme_mode'] ??
+              2;
 
       //font
       currentFontSize = prefs.getString('default_font_size') ?? 'Medium';
       currentFontFamily = prefs.getString('default_font_family') ?? 'Arial';
     });
-
   }
 
   @override
@@ -78,10 +75,10 @@ class _SettingScreenState extends State<SettingScreen> with WidgetsBindingObserv
   }
 
   Future<void> _checkNotificationPermission() async {
-    var status = await Permission.notification.status;
-    setState(() {
-      isTurnOnNotification = status.isGranted;
-    });
+    isTurnOnNotification =
+        await NotificationPermissions.getNotificationPermissionStatus() ==
+            PermissionStatus.granted;
+    setState(() {});
   }
 
   // general
@@ -115,46 +112,29 @@ class _SettingScreenState extends State<SettingScreen> with WidgetsBindingObserv
             title: const Text('General'),
             tiles: <SettingsTile>[
               SettingsTile.switchTile(
-                leading: Icon(isTurnOnNotification ? Icons.notifications_on: Icons.notifications_off),
+                leading: Icon(isTurnOnNotification
+                    ? Icons.notifications_on
+                    : Icons.notifications_off),
                 title: const Text('Notifications'),
                 initialValue: isTurnOnNotification,
                 onToggle: (value) async {
-                  var status = await Permission.notification.status;
-                  if (status.isDenied) {
-                    if (Platform.isIOS) {
-                      FirebaseMessaging messaging = FirebaseMessaging.instance;
-                      NotificationSettings settings = await messaging.requestPermission(
-                        alert: true,
-                        announcement: false,
-                        badge: true,
-                        carPlay: false,
-                        criticalAlert: false,
-                        provisional: false,
-                        sound: true,
-                      );
-
-                      setState(() {
-                        isTurnOnNotification = settings.authorizationStatus == AuthorizationStatus.authorized;
-                      });
-
-                    } else {
-
-                      var result = await Permission.notification.request();
-                      if(result.isGranted) {
-                        setState(() {
-                          isTurnOnNotification = true;
-                        });
-                      }
-
-                    }
-                  } else if (status.isPermanentlyDenied || isTurnOnNotification) {
-                    openAppSettings();
+                  var status = await NotificationPermissions
+                      .getNotificationPermissionStatus();
+                  if (status == PermissionStatus.denied) {
+                    var result = await NotificationPermissions
+                        .requestNotificationPermissions(
+                      iosSettings: const NotificationSettingsIos(
+                          alert: true, badge: true, sound: true),
+                      openSettings: false,
+                    );
+                  } else {
+                    AppSettings.openAppSettings(
+                        type: AppSettingsType.notification);
                   }
                 },
               ),
             ],
           ),
-
           SettingsSection(
             title: const Text('Theme'),
             tiles: <SettingsTile>[
@@ -254,7 +234,8 @@ class _SettingScreenState extends State<SettingScreen> with WidgetsBindingObserv
               SettingsTile(
                 title: const Text("Light theme"),
                 leading: const Icon(Icons.settings_brightness),
-                value: Text(["Light mode", "Dark mode", "System"][currentLightTheme]),
+                value: Text(
+                    ["Light mode", "Dark mode", "System"][currentLightTheme]),
                 trailing: AnimatedToggleSwitch<int>.rolling(
                   borderWidth: 0.4,
                   current: currentLightTheme,
@@ -268,15 +249,22 @@ class _SettingScreenState extends State<SettingScreen> with WidgetsBindingObserv
                   ),
                   onChanged: (i) {
                     switch (i) {
-                      case 0: AdaptiveTheme.of(context).setLight();
-                      case 1: AdaptiveTheme.of(context).setDark();
-                      case 2: AdaptiveTheme.of(context).setSystem();
+                      case 0:
+                        AdaptiveTheme.of(context).setLight();
+                      case 1:
+                        AdaptiveTheme.of(context).setDark();
+                      case 2:
+                        AdaptiveTheme.of(context).setSystem();
                     }
                     setState(() => currentLightTheme = i);
                   },
                   iconBuilder: (value, foreground) {
                     return Icon(
-                      [Icons.light_mode, Icons.dark_mode, Icons.brightness_auto][value],
+                      [
+                        Icons.light_mode,
+                        Icons.dark_mode,
+                        Icons.brightness_auto
+                      ][value],
                       color: Theme.of(context).primaryIconTheme.color,
                     );
                   },
@@ -285,7 +273,6 @@ class _SettingScreenState extends State<SettingScreen> with WidgetsBindingObserv
               ),
             ],
           ),
-
           SettingsSection(
             title: const Text('Font'),
             tiles: <SettingsTile>[
@@ -335,10 +322,11 @@ class _SettingScreenState extends State<SettingScreen> with WidgetsBindingObserv
                 value: Text(currentFontFamily),
                 onPressed: (context) async {
                   final result = await showModalActionSheet<String>(
-                    context: context,
-                    title: 'Font Family',
-                    actions: appFonts.values.map((font) => SheetAction(label: font, key: font)).toList()
-                  );
+                      context: context,
+                      title: 'Font Family',
+                      actions: appFonts.values
+                          .map((font) => SheetAction(label: font, key: font))
+                          .toList());
 
                   if (result != null) {
                     prefs.setString('default_font_family', result);
@@ -355,4 +343,3 @@ class _SettingScreenState extends State<SettingScreen> with WidgetsBindingObserv
     );
   }
 }
-
