@@ -27,12 +27,18 @@ class _SettingScreenState extends State<SettingScreen> with WidgetsBindingObserv
 
   void init() async {
     prefs = await SharedPreferences.getInstance();
-    var notificationStatus = await Permission.notification.status;
 
+    var notificationStatus = await Permission.notification.status;
+    NotificationSettings settings = await FirebaseMessaging.instance.getNotificationSettings();
     WidgetsBinding.instance.addObserver(this);
+
     setState(() {
       // general
-      isTurnOnNotification = notificationStatus.isGranted;
+      if (Platform.isIOS) {
+        isTurnOnNotification = settings.authorizationStatus == AuthorizationStatus.authorized;
+      } else {
+        isTurnOnNotification = notificationStatus.isGranted;
+      }
 
       // theme
       currentSettingTheme = prefs.getString('setting_theme') ?? 'Default';
