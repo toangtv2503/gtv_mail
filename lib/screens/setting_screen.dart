@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gtv_mail/utils/app_fonts.dart';
@@ -26,6 +28,7 @@ class _SettingScreenState extends State<SettingScreen> with WidgetsBindingObserv
   void init() async {
     prefs = await SharedPreferences.getInstance();
     var notificationStatus = await Permission.notification.status;
+
     WidgetsBinding.instance.addObserver(this);
     setState(() {
       // general
@@ -112,11 +115,31 @@ class _SettingScreenState extends State<SettingScreen> with WidgetsBindingObserv
                 onToggle: (value) async {
                   var status = await Permission.notification.status;
                   if (status.isDenied) {
-                    var result = await Permission.notification.request();
-                    if(result.isGranted) {
+                    if (Platform.isIOS) {
+                      FirebaseMessaging messaging = FirebaseMessaging.instance;
+                      NotificationSettings settings = await messaging.requestPermission(
+                        alert: true,
+                        announcement: false,
+                        badge: true,
+                        carPlay: false,
+                        criticalAlert: false,
+                        provisional: false,
+                        sound: true,
+                      );
+
                       setState(() {
-                        isTurnOnNotification = true;
+                        isTurnOnNotification = settings.authorizationStatus == AuthorizationStatus.authorized;
                       });
+
+                    } else {
+
+                      var result = await Permission.notification.request();
+                      if(result.isGranted) {
+                        setState(() {
+                          isTurnOnNotification = true;
+                        });
+                      }
+
                     }
                   } else if (status.isPermanentlyDenied || isTurnOnNotification) {
                     openAppSettings();

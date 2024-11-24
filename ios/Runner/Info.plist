@@ -82,5 +82,7 @@
     <string>GTV Mail need permission to access your gallery</string>
     <key>NSUserNotificationsUsageDescription</key>
     <string>GTV Mail will send notifications about new mails.</string>
+    <key>PermissionGroupNotification</key>
+    <string>GTV Mail will send notifications about new mails.</string>
 </dict>
 </plist>
