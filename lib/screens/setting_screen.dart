@@ -7,6 +7,7 @@ import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gtv_mail/utils/app_fonts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,12 +20,17 @@ class SettingScreen extends StatefulWidget {
   State<SettingScreen> createState() => _SettingScreenState();
 }
 
-class _SettingScreenState extends State<SettingScreen> {
+class _SettingScreenState extends State<SettingScreen> with WidgetsBindingObserver{
   late SharedPreferences prefs;
 
   void init() async {
     prefs = await SharedPreferences.getInstance();
+    var notificationStatus = await Permission.notification.status;
+    WidgetsBinding.instance.addObserver(this);
     setState(() {
+      // general
+      isTurnOnNotification = notificationStatus.isGranted;
+
       // theme
       currentSettingTheme = prefs.getString('setting_theme') ?? 'Default';
       selectedSettingTheme =
@@ -40,6 +46,7 @@ class _SettingScreenState extends State<SettingScreen> {
       currentFontSize = prefs.getString('default_font_size') ?? 'Medium';
       currentFontFamily = prefs.getString('default_font_family') ?? 'Arial';
     });
+
   }
 
   @override
@@ -47,6 +54,29 @@ class _SettingScreenState extends State<SettingScreen> {
     init();
     super.initState();
   }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkNotificationPermission();
+    }
+  }
+
+  Future<void> _checkNotificationPermission() async {
+    var status = await Permission.notification.status;
+    setState(() {
+      isTurnOnNotification = status.isGranted;
+    });
+  }
+
+  // general
+  bool isTurnOnNotification = false;
 
   // theme
   DevicePlatform selectedSettingTheme = DevicePlatform.device;
@@ -72,6 +102,30 @@ class _SettingScreenState extends State<SettingScreen> {
         applicationType: ApplicationType.both,
         platform: selectedSettingTheme,
         sections: [
+          SettingsSection(
+            title: const Text('General'),
+            tiles: <SettingsTile>[
+              SettingsTile.switchTile(
+                leading: Icon(isTurnOnNotification ? Icons.notifications_on: Icons.notifications_off),
+                title: const Text('Notifications'),
+                initialValue: isTurnOnNotification,
+                onToggle: (value) async {
+                  var status = await Permission.notification.status;
+                  if (status.isDenied) {
+                    var result = await Permission.notification.request();
+                    if(result.isGranted) {
+                      setState(() {
+                        isTurnOnNotification = true;
+                      });
+                    }
+                  } else if (status.isPermanentlyDenied || isTurnOnNotification) {
+                    openAppSettings();
+                  }
+                },
+              ),
+            ],
+          ),
+
           SettingsSection(
             title: const Text('Theme'),
             tiles: <SettingsTile>[

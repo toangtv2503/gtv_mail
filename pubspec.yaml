@@ -70,6 +70,7 @@ dependencies:
   easy_stepper: ^0.8.5+1
   settings_ui: ^2.0.2
   animated_toggle_switch: ^0.8.3
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:

@@ -80,5 +80,7 @@
     <string>GTV Mail need permission to access your microphone</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>GTV Mail need permission to access your gallery</string>
+    <key>NSUserNotificationsUsageDescription</key>
+    <string>GTV Mail will send notifications about new mails.</string>
 </dict>
 </plist>

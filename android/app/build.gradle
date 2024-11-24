@@ -10,7 +10,8 @@ plugins {
 
 android {
     namespace = "com.toangtv.gtv_mail"
-    compileSdk = flutter.compileSdkVersion
+//    compileSdk = flutter.compileSdkVersion
+    compileSdk = 34
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

@@ -14,6 +14,7 @@ import 'package:intl/intl.dart';
 import '../models/mail.dart';
 import '../services/mail_service.dart';
 import '../utils/app_theme.dart';
+import '../utils/image_default.dart';
 
 class ListMailComponent extends StatefulWidget {
   ListMailComponent(
@@ -160,7 +161,7 @@ class _ListMailComponentState extends State<ListMailComponent>
                     leading: CircleAvatar(
                       backgroundColor: AppTheme.blueColor,
                       child: CachedNetworkImage(
-                        imageUrl: userCache[mails[index].from]!.imageUrl!,
+                        imageUrl: userCache[mails[index].from]?.imageUrl! ?? DEFAULT_AVATAR,
                         imageBuilder: (context, imageProvider) => Container(
                           decoration: BoxDecoration(
                             border: const GradientBoxBorder(

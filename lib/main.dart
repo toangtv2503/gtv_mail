@@ -44,7 +44,7 @@ void main() async {
       AdaptiveThemeMode.light,
       AdaptiveThemeMode.dark,
       AdaptiveThemeMode.system
-    ][jsonDecode(prefs.getString(AdaptiveTheme.prefKey)!)['theme_mode'] ?? 2],
+    ][jsonDecode(prefs.getString(AdaptiveTheme.prefKey) ?? jsonEncode({'theme_mode': 2}))['theme_mode'] ?? 2],
   ));
 }
 
