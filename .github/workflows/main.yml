@@ -25,6 +25,17 @@ jobs:
       # Install dependencies
       - run: flutter pub get
 
+      - name: Add namespace for notification_permissions
+        run: |
+          GRADLE_FILE="$HOME/.pub-cache/hosted/pub.dartlang.org/notification_permissions-0.6.1/android/build.gradle"
+          if [ -f "$GRADLE_FILE" ]; then
+            echo "Adding namespace to $GRADLE_FILE"
+            sed -i '/android {/a\    namespace "com.vanethos.notification_permissions"' "$GRADLE_FILE"
+          else
+            echo "Gradle file not found!"
+            exit 1
+          fi
+
       # Android release build
       - name: Build Android Release APK
         run: flutter build apk --release --split-per-abi
