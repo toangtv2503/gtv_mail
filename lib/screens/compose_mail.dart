@@ -12,6 +12,7 @@ import 'package:gtv_mail/models/attachment.dart';
 import 'package:gtv_mail/models/mail.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:gtv_mail/services/file_service.dart';
+import 'package:gtv_mail/services/notification_service.dart';
 import 'package:gtv_mail/services/user_service.dart';
 import 'package:gtv_mail/utils/image_default.dart';
 import 'package:lottie/lottie.dart';
@@ -178,6 +179,7 @@ class _ComposeMailState extends State<ComposeMail> {
       );
 
       await mailService.sendEmail(newMail);
+      await notificationService.updateBadge(_fromController.text);
 
       Navigator.pop(context);
     }

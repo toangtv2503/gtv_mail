@@ -44,11 +44,46 @@ class _HomeScreenState extends State<HomeScreen> {
     docRef.snapshots().listen(
       (event) {
         setState(() {});
+        notificationService.updateBadge(email);
       },
       onError: (error) => print("Listen failed: $error"),
     );
 
-    await notificationService.updateBadge(email);
+    FirebaseFirestore.instance
+        .collection("mails")
+        .where('to', arrayContains: email)
+        .snapshots()
+        .listen((querySnapshot) {
+      for (var change in querySnapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          NotificationService.showInstantNotification("GTV Mail", "New email had been sent to you");
+        }
+      }
+    });
+
+    FirebaseFirestore.instance
+        .collection("mails")
+        .where('cc', arrayContains: email)
+        .snapshots()
+        .listen((querySnapshot) {
+      for (var change in querySnapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          NotificationService.showInstantNotification("GTV Mail", "New email had been sent to you");
+        }
+      }
+    });
+
+    FirebaseFirestore.instance
+        .collection("mails")
+        .where('bcc', arrayContains: email)
+        .snapshots()
+        .listen((querySnapshot) {
+      for (var change in querySnapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          NotificationService.showInstantNotification("GTV Mail", "New email had been sent to you");
+        }
+      }
+    });
   }
 
   @override
@@ -60,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _handleSignOut() {
     prefs.remove('currentIndex');
     prefs.remove('email');
+    FlutterAppBadgeControl.updateBadgeCount(0);
     FirebaseAuth.instance.signOut();
   }
 
