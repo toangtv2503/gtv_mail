@@ -25,6 +25,15 @@ jobs:
       # Install dependencies
       - run: flutter pub get
 
+      # Debug pub-cache path
+      - name: Debug pub-cache path
+        run: |
+          echo "Checking for notification_permissions in pub-cache..."
+          find $PUB_CACHE -name "notification_permissions*"
+        env:
+          PUB_CACHE: $HOME/.pub-cache
+
+      # Add namespace to notification_permissions
       - name: Add namespace to notification_permissions
         run: |
           GRADLE_FILE="$PUB_CACHE/hosted/pub.dartlang.org/notification_permissions-0.6.1/android/build.gradle"
