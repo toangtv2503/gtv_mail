@@ -15,11 +15,12 @@ class Mail {
   bool isStarred;
   bool isHidden;
   bool isSpam;
+  bool isReplyMail;
   bool isImportant;
   List<String>? labels;
   bool isDraft;
   List<Attachment>? attachments;
-  List<Mail> replies;
+  List<Mail>? replies;
 
   Mail({
     this.uid,
@@ -39,7 +40,8 @@ class Mail {
     this.labels = const [],
     this.isDraft = false,
     this.attachments,
-    this.replies = const [],
+    this.replies,
+    this.isReplyMail = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -61,7 +63,8 @@ class Mail {
       'labels': labels,
       'isDraft': isDraft,
       'attachments': attachments?.map((att) => att.toJson()).toList(),
-      'replies': replies
+      'replies': replies?.map((rep) => rep.toJson()).toList(),
+      'isReplyMail': isReplyMail
     };
   }
 
@@ -90,7 +93,10 @@ class Mail {
       attachments: (json['attachments'] as List<dynamic>?)
           ?.map((att) => Attachment.fromJson(att as Map<String, dynamic>))
           .toList(),
-      replies: List<Mail>.from(json['replies'] ?? []),
+      replies: (json['replies'] as List<dynamic>?)
+        ?.map((mail) => Mail.fromJson(mail as Map<String, dynamic>))
+        .toList(),
+      isReplyMail: json['isReplyMail'] ?? false,
     );
   }
 }

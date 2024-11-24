@@ -52,9 +52,28 @@ class _ListMailComponentState extends State<ListMailComponent>
   }
 
   void _handleDetailMail(Mail mail, MyUser senderInfo) {
-    context.pushNamed('detail',
-        pathParameters: {'id': mail.uid!},
-        extra: {'mail': mail, 'senderInfo': senderInfo});
+    if (widget.category == 'Drafts') {
+      context.pushNamed('compose', queryParameters: {'draft': mail.uid});
+    } else {
+      context.pushNamed('detail',
+          pathParameters: {'id': mail.uid!},
+          extra: {'mail': mail, 'senderInfo': senderInfo});
+    }
+
+  }
+
+  List<Mail> getMails(AsyncSnapshot<List<Mail>> snapshot){
+    if (widget.category == 'Primary') {
+      return snapshot.data!
+          .where((mail) => mailService.isPrimaryMail(mail) && !mail.isReplyMail)
+          .toList();
+    }
+    if (widget.category == 'Drafts') {
+      return snapshot.data!
+          .where((mail) => mail.isDraft)
+          .toList();
+    }
+    return [];
   }
 
   @override
@@ -65,22 +84,24 @@ class _ListMailComponentState extends State<ListMailComponent>
         if (snapshot.connectionState == ConnectionState.waiting) {
           return SliverToBoxAdapter(
               child: Center(
-            child: SizedBox(
-              width: 50,
-              child: Lottie.asset(
-                'assets/lottiefiles/circle_loading.json',
-                fit: BoxFit.fill,
-              ),
-            ),
-          ));
+                child: SizedBox(
+                  width: 50,
+                  child: Lottie.asset(
+                    'assets/lottiefiles/circle_loading.json',
+                    fit: BoxFit.fill,
+                  ),
+                ),
+              ));
+
         } else if (snapshot.hasError) {
           return SliverToBoxAdapter(
               child: Center(
                   child: Text(
-            'Error: ${snapshot.error}',
-            style: Theme.of(context).textTheme.displaySmall,
-          )));
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    'Error: ${snapshot.error}',
+                    style: Theme.of(context).textTheme.displaySmall,
+                  )));
+
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty || getMails(snapshot).isEmpty) {
           return SliverToBoxAdapter(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -105,10 +126,10 @@ class _ListMailComponentState extends State<ListMailComponent>
               ],
             ),
           );
+
+
         } else {
-          final mails = snapshot.data!
-              .where((mail) => mailService.isPrimaryMail(mail))
-              .toList();
+          final mails = getMails(snapshot);
 
           return SliverList(
             delegate: SliverChildBuilderDelegate(

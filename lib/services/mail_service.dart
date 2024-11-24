@@ -66,6 +66,26 @@ class MailService {
     );
   }
 
+  Future<Mail> getMailById(String id) async {
+    final docSnapshot = await FirebaseFirestore.instance
+        .collection("mails")
+        .doc(id)
+        .get();
+
+    if (docSnapshot.exists) {
+      return Mail.fromJson(docSnapshot.data()!);
+    } else {
+      throw Exception('Mail not found');
+    }
+  }
+
+  Future<void> updateMail(Mail mail) async {
+    await FirebaseFirestore.instance
+        .collection("mails")
+        .doc(mail.uid)
+        .update(mail.toJson());
+  }
+
   bool isPrimaryMail(Mail mail) {
     return !mail.isSpam && !mail.isDelete && !mail.isHidden;
   }

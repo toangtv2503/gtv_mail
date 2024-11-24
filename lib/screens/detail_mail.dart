@@ -4,6 +4,7 @@ import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:gtv_mail/services/file_service.dart';
@@ -40,6 +41,21 @@ class _DetailMailState extends State<DetailMail> {
 
   void init() {
     _bodyController.document = widget.mail.body!;
+    loadReplies();
+  }
+
+  List<QuillController> controllers = [];
+
+  void loadReplies() {
+    if (widget.mail.replies?.isNotEmpty ?? false) {
+      setState(() {
+        controllers = widget.mail.replies!.map((rep) {
+          var controller = QuillController.basic();
+          controller.document = rep.body!;
+          return controller;
+        }).toList();
+      });
+    }
   }
 
   void _handleBack() {
@@ -56,8 +72,8 @@ class _DetailMailState extends State<DetailMail> {
         "to ${widget.mail.to!.first.substring(0, 4)}",
       if (widget.mail.cc?.isNotEmpty ?? false)
         "cc: ${widget.mail.cc!.first.substring(0, 4)}",
-      if (widget.mail.bcc?.isNotEmpty ?? false)
-        "bcc: ${widget.mail.bcc!.first.substring(0, 4)}",
+      // if (widget.mail.bcc?.isNotEmpty ?? false)
+      //   "bcc: ${widget.mail.bcc!.first.substring(0, 4)}",
     ];
 
     return message.join(", ");
@@ -67,11 +83,17 @@ class _DetailMailState extends State<DetailMail> {
     return list.join("\n");
   }
 
-  void _handleReply() {}
+  void _handleReply() async {
+    var result = await context.pushNamed('compose',
+        queryParameters: {'draft': 'reply'}, extra: {'id': widget.id});
+  }
 
   void _handleReplyAll() {}
 
-  void _handleForward() {}
+  void _handleForward() async {
+    var result = await context.pushNamed('compose',
+        queryParameters: {'draft': 'forward'}, extra: {'id': widget.id});
+  }
 
   void _openFile(attachment) async {
     if (attachment.url != null) {
@@ -204,10 +226,10 @@ class _DetailMailState extends State<DetailMail> {
                     ListTile(
                         leading: const Text("Cc"),
                         title: Text(_listToText(widget.mail.cc!))),
-                  if (widget.mail.bcc?.isNotEmpty ?? false)
-                    ListTile(
-                        leading: const Text("Bcc"),
-                        title: Text(_listToText(widget.mail.bcc!))),
+                  // if (widget.mail.bcc?.isNotEmpty ?? false)
+                  //   ListTile(
+                  //       leading: const Text("Bcc"),
+                  //       title: Text(_listToText(widget.mail.bcc!))),
                   ListTile(
                       leading: const Text("Date"),
                       title: Text(DateFormat('h:mm a, dd MMMM, yyyy')
@@ -217,29 +239,70 @@ class _DetailMailState extends State<DetailMail> {
             ),
           Expanded(
             flex: 5,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: Theme.of(context).primaryColor,
-                ),
-                padding: const EdgeInsets.all(8),
-                child: QuillEditor.basic(
-                  controller: _bodyController,
-                  configurations: QuillEditorConfigurations(
-                    placeholder: "Body",
-                    checkBoxReadOnly: true,
-                    enableInteractiveSelection: false,
-                    onLaunchUrl: (url) async {
-                      await launchUrl(
-                        Uri.parse(url),
-                        mode: LaunchMode.externalApplication,
-                      );
-                    },
+            child: SingleChildScrollView(
+              child: Column(children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Container(
+                    height: 580,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: QuillEditor.basic(
+                      controller: _bodyController,
+                      configurations: QuillEditorConfigurations(
+                        placeholder: "Body",
+                        checkBoxReadOnly: true,
+                        enableInteractiveSelection: false,
+                        onLaunchUrl: (url) async {
+                          await launchUrl(
+                            Uri.parse(url),
+                            mode: LaunchMode.externalApplication,
+                          );
+                        },
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                if (widget.mail.replies?.isNotEmpty ?? false)
+                  Container(
+                    height: 580,
+                    child: ListView.builder(
+                    padding: const EdgeInsets.all(16.0),
+                    itemCount: controllers.length,
+                    itemBuilder: (context, index) {
+                      final controller = controllers[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: Container(
+                          height: 580,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: Theme.of(context).primaryColor,
+                          ),
+                          padding: const EdgeInsets.all(8),
+                          child: QuillEditor.basic(
+                            controller: controller,
+                            configurations: QuillEditorConfigurations(
+                              placeholder: "Body",
+                              checkBoxReadOnly: true,
+                              enableInteractiveSelection: false,
+                              onLaunchUrl: (url) async {
+                                await launchUrl(
+                                  Uri.parse(url),
+                                  mode: LaunchMode.externalApplication,
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                                    ),
+                  ),
+              ]),
             ),
           ),
           if (widget.mail.attachments?.isNotEmpty ?? false)

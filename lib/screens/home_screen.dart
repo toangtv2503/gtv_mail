@@ -10,6 +10,7 @@ import 'package:gtv_mail/models/user.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/mail.dart';
 import '../services/notification_service.dart';
 import '../services/user_service.dart';
 import '../utils/app_theme.dart';
@@ -42,9 +43,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final id = FirebaseAuth.instance.currentUser!.uid;
     final docRef = FirebaseFirestore.instance.collection("users").doc(id);
     docRef.snapshots().listen(
-      (event) {
+      (event) async {
         setState(() {});
-        notificationService.updateBadge(email);
+        await notificationService.updateBadge(email);
       },
       onError: (error) => print("Listen failed: $error"),
     );
@@ -53,34 +54,15 @@ class _HomeScreenState extends State<HomeScreen> {
         .collection("mails")
         .where('to', arrayContains: email)
         .snapshots()
-        .listen((querySnapshot) {
+        .listen((querySnapshot) async {
       for (var change in querySnapshot.docChanges) {
         if (change.type == DocumentChangeType.added) {
-          NotificationService.showInstantNotification("GTV Mail", "New email had been sent to you");
-        }
-      }
-    });
-
-    FirebaseFirestore.instance
-        .collection("mails")
-        .where('cc', arrayContains: email)
-        .snapshots()
-        .listen((querySnapshot) {
-      for (var change in querySnapshot.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          NotificationService.showInstantNotification("GTV Mail", "New email had been sent to you");
-        }
-      }
-    });
-
-    FirebaseFirestore.instance
-        .collection("mails")
-        .where('bcc', arrayContains: email)
-        .snapshots()
-        .listen((querySnapshot) {
-      for (var change in querySnapshot.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          NotificationService.showInstantNotification("GTV Mail", "New email had been sent to you");
+          var data = change.doc.data();
+          if (data == null) continue;
+          var newMail = Mail.fromJson(data);
+          if (newMail.isDraft) continue;
+          NotificationService.showInstantNotification(newMail.from!, newMail.subject!);
+          await notificationService.updateBadge(email);
         }
       }
     });

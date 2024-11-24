@@ -28,17 +28,19 @@ import '../utils/app_theme.dart';
 import '../utils/button_data.dart';
 
 class ComposeMail extends StatefulWidget {
-  ComposeMail({super.key, this.isDraft = true, this.draftId});
+  ComposeMail({super.key, this.isDraft = true, this.id, this.isReply, this.isForward});
   bool? isDraft;
-  String? draftId;
+  String? id;
+  bool? isReply;
+  bool? isForward;
 
   @override
   State<ComposeMail> createState() => _ComposeMailState();
 }
 
 class _ComposeMailState extends State<ComposeMail> {
-  late String _defaultFontSize;
-  late String _defaultFontFamily;
+  late String _defaultFontSize = 'Medium';
+  late String _defaultFontFamily = "Arial";
 
   final QuillController _bodyController = QuillController.basic();
   late SharedPreferences prefs;
@@ -57,6 +59,24 @@ class _ComposeMailState extends State<ComposeMail> {
       _defaultFontSize = prefs.getString('default_font_size') ?? "Medium";
       _defaultFontFamily = prefs.getString('default_font_family') ?? "Arial";
     });
+
+    if (widget.isForward ?? false) {
+      Mail forwardMail = await mailService.getMailById(widget.id!);
+      setState(() {
+        _subject = forwardMail.subject;
+        _bodyController.document = forwardMail.body!;
+        attachments = forwardMail.attachments ?? [];
+      });
+    }
+
+    if (widget.isDraft ?? false) {
+      Mail draft = await mailService.getMailById(widget.id!);
+      setState(() {
+        _subject = draft.subject;
+        _bodyController.document = draft.body!;
+        attachments = draft.attachments ?? [];
+      });
+    }
   }
 
   @override
@@ -149,6 +169,11 @@ class _ComposeMailState extends State<ComposeMail> {
       List<String> bccEmails =
           _bccEmailsController.getTags?.map((tag) => tag.tag).toList() ?? [];
 
+      if (widget.isReply ?? false) {
+        Mail repMail = await mailService.getMailById(widget.id!);
+        toEmails.add(repMail.from!);
+      }
+
       if (toEmails.length + ccEmails.length + bccEmails.length == 0) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Please add at least one recipient!'),
@@ -168,7 +193,7 @@ class _ComposeMailState extends State<ComposeMail> {
       String uid = const Uuid().v8();
       Mail newMail = Mail(
         uid: uid,
-        from: _fromController.text,
+        from: _fromController.text.isNotEmpty ? _fromController.text: "Draft mail",
         subject: _subject,
         to: toEmails.isEmpty ? null : toEmails,
         cc: ccEmails.isEmpty ? null : ccEmails,
@@ -178,11 +203,68 @@ class _ComposeMailState extends State<ComposeMail> {
         attachments: sendAttachments.isNotEmpty ? sendAttachments : null,
       );
 
-      await mailService.sendEmail(newMail);
+      if (widget.isReply ?? false) {
+        Mail repMail = await mailService.getMailById(widget.id!);
+
+        if (repMail.replies?.isEmpty ?? true) {
+          repMail.replies = [];
+        }
+        newMail.isReplyMail = true;
+        repMail.replies!.add(newMail);
+        await mailService.updateMail(repMail);
+      }
+
+      if (widget.isForward ?? false) {
+        Mail forwardMail = await mailService.getMailById(widget.id!);
+        newMail.attachments = forwardMail.attachments;
+      }
+
+      if (widget.isDraft ?? false) {
+        Mail draft = await mailService.getMailById(widget.id!);
+        newMail.uid = draft.uid;
+        newMail.isDraft = false;
+
+        await mailService.updateMail(newMail);
+      } else {
+        await mailService.sendEmail(newMail);
+      }
+
       await notificationService.updateBadge(_fromController.text);
+
 
       Navigator.pop(context);
     }
+  }
+
+  void _saveDraft() async {
+    List<String> toEmails =
+        _toEmailsController.getTags?.map((tag) => tag.tag).toList() ?? [];
+    List<String> ccEmails =
+        _ccEmailsController.getTags?.map((tag) => tag.tag).toList() ?? [];
+    List<String> bccEmails =
+        _bccEmailsController.getTags?.map((tag) => tag.tag).toList() ?? [];
+
+    List<Attachment> sendAttachments = [];
+    if (attachments.isNotEmpty) {
+      sendAttachments = await fileService.mapFilesToAttachments(fileCached);
+    }
+
+    String uid = const Uuid().v8();
+
+    Mail draft = Mail(
+      uid: uid,
+      from: _fromController.text,
+      subject: _subject,
+      to: toEmails.isEmpty ? null : toEmails,
+      cc: ccEmails.isEmpty ? null : ccEmails,
+      bcc: bccEmails.isEmpty ? null : bccEmails,
+      body: _bodyController.document,
+      sentDate: DateTime.now(),
+      attachments: sendAttachments.isNotEmpty ? sendAttachments : null,
+      isDraft: true,
+    );
+
+    await mailService.sendEmail(draft);
   }
 
   @override
@@ -218,7 +300,8 @@ class _ComposeMailState extends State<ComposeMail> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-            onPressed: () {
+            onPressed:  (){
+              _saveDraft();
               Navigator.pop(context);
             },
             icon: const Icon(Icons.close)),
@@ -242,7 +325,7 @@ class _ComposeMailState extends State<ComposeMail> {
           key: _key,
           child: Column(
             children: [
-              Autocomplete<DynamicTagData<ButtonData>>(
+              if (!(widget.isReply ?? false) || (widget.isForward ?? false)) Autocomplete<DynamicTagData<ButtonData>>(
                 optionsViewBuilder: (context, onSelected, options) {
                   return Align(
                     alignment: Alignment.topCenter,
@@ -838,7 +921,7 @@ class _ComposeMailState extends State<ComposeMail> {
               const SizedBox(
                 height: 8,
               ),
-              TextFormField(
+              if (!(widget.isForward ?? false))TextFormField(
                 decoration: const InputDecoration(
                     border: UnderlineInputBorder(), hintText: "Subject"),
                 validator: (value) {
@@ -867,7 +950,7 @@ class _ComposeMailState extends State<ComposeMail> {
                           'Huge': '64',
                           'Clear': '0',
                         },
-                          initialValue: _defaultFontSize,
+                          initialValue: _defaultFontSize ?? 'Medium',
                           onSelected: (value) => setState(() {
                             _defaultFontSize = value;
                           }),

@@ -51,10 +51,26 @@ final GoRouter appRouter = GoRouter(
             path: '/compose',
             builder: (BuildContext context, GoRouterState state) {
               final draftParam = state.uri.queryParameters['draft'];
+              final extra = state.extra as Map<String, dynamic>?;
               if (draftParam == 'new') {
                 return ComposeMail(isDraft: false);
-              } else if (draftParam != null) {
-                return ComposeMail(draftId: draftParam);
+              } else if (draftParam == 'reply') {
+                return ComposeMail(
+                  id: extra!['id'] as String,
+                  isReply: true,
+                );
+              } else if (draftParam == 'forward') {
+                return ComposeMail(
+                  id: extra!['id'] as String,
+                  isForward: true
+                );
+              }
+              else if (draftParam != null) {
+                return ComposeMail(
+                  id: draftParam,
+                  isReply: false,
+                  isDraft: true,
+                );
               } else {
                 return ComposeMail(isDraft: false);
               }
@@ -65,13 +81,15 @@ final GoRouter appRouter = GoRouter(
               path: '/detail/:id',
               builder: (BuildContext context, GoRouterState state) {
                 final extra = state.extra as Map<String, dynamic>?;
-                if (extra == null || !extra.containsKey('mail') || !extra.containsKey('senderInfo')) {
+                if (extra == null ||
+                    !extra.containsKey('mail') ||
+                    !extra.containsKey('senderInfo')) {
                   return NotFoundScreen(
                     url: state.uri.path,
                   );
                 }
                 return DetailMail(
-                    id: state.pathParameters['id']!,
+                  id: state.pathParameters['id']!,
                   mail: extra['mail'] as Mail,
                   sender: extra['senderInfo'] as MyUser,
                 );
