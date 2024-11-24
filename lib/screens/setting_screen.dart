@@ -120,7 +120,7 @@ class _SettingScreenState extends State<SettingScreen>
                 onToggle: (value) async {
                   var status = await NotificationPermissions
                       .getNotificationPermissionStatus();
-                  if (status == PermissionStatus.denied) {
+                  if (status != PermissionStatus.granted) {
                     var result = await NotificationPermissions
                         .requestNotificationPermissions(
                       iosSettings: const NotificationSettingsIos(
