@@ -25,37 +25,6 @@ jobs:
       # Install dependencies
       - run: flutter pub get
 
-      # Debug home and cache directory
-      - name: Debug home and pub-cache
-        run: |
-          echo "HOME directory: $HOME"
-          echo "Listing directories in $HOME:"
-          ls -R $HOME
-        env:
-          PUB_CACHE: $HOME/.pub-cache
-
-      # Verify notification_permissions location
-      - name: Verify notification_permissions path
-        run: find $PUB_CACHE -name "notification_permissions*"
-        env:
-          PUB_CACHE: /Users/runner/hostedtoolcache/flutter/3.24.3-stable/arm64/.pub-cache
-
-      # Add namespace to notification_permissions
-      - name: Add namespace to notification_permissions
-        run: |
-          GRADLE_FILE="$PUB_CACHE/hosted/pub.dartlang.org/notification_permissions-0.6.1/android/build.gradle"
-          echo "Checking if Gradle file exists at $GRADLE_FILE"
-          if [ -f "$GRADLE_FILE" ]; then
-            echo "Adding namespace to $GRADLE_FILE"
-            sed -i '/android {/a\    namespace "com.vanethos.notification_permissions"' "$GRADLE_FILE"
-          else
-            echo "Gradle file not found at $GRADLE_FILE!"
-            exit 1
-          fi
-        env:
-          PUB_CACHE: /Users/runner/hostedtoolcache/flutter/3.24.3-stable/arm64/.pub-cache
-
-
       # Android release build
       - name: Build Android Release APK
         run: flutter build apk --release --split-per-abi

@@ -65,7 +65,7 @@ class _ListMailComponentState extends State<ListMailComponent>
   List<Mail> getMails(AsyncSnapshot<List<Mail>> snapshot){
     if (widget.category == 'Primary') {
       return snapshot.data!
-          .where((mail) => mailService.isPrimaryMail(mail) && !mail.isReplyMail)
+          .where((mail) => mailService.isPrimaryMail(mail) && !mail.isReplyMail && !mail.isDraft)
           .toList();
     }
     if (widget.category == 'Drafts') {

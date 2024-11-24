@@ -11,6 +11,15 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+    afterEvaluate { project ->
+        if (project.name == "notification_permissions") {
+            if (project.hasProperty("android")) {
+                project.android {
+                    namespace = "com.vanethos.notification_permissions"
+                }
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
