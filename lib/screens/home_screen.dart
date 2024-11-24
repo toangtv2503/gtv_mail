@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app_badge_control/flutter_app_badge_control.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:gtv_mail/components/list_mail_component.dart';
@@ -9,6 +10,7 @@ import 'package:gtv_mail/models/user.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/notification_service.dart';
 import '../services/user_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/drawer_menu.dart';
@@ -45,6 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       onError: (error) => print("Listen failed: $error"),
     );
+
+    await notificationService.updateBadge(email);
   }
 
   @override

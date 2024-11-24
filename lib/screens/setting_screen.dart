@@ -127,10 +127,9 @@ class _SettingScreenState extends State<SettingScreen>
                           alert: true, badge: true, sound: true),
                       openSettings: false,
                     );
-                  } else {
-                    AppSettings.openAppSettings(
-                        type: AppSettingsType.notification);
+                    return;
                   }
+                  AppSettings.openAppSettings(type: AppSettingsType.notification);
                 },
               ),
             ],

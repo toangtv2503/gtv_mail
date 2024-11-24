@@ -185,7 +185,7 @@ class _ListMailComponentState extends State<ListMailComponent>
                       ),
                     ),
                     title: Text(
-                      userCache[mails[index].from]!.name!,
+                      userCache[mails[index].from]?.name! ?? 'Sender',
                       style: Theme.of(context).textTheme.titleMedium,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
