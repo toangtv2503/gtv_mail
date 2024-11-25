@@ -254,7 +254,7 @@ class _ComposeMailState extends State<ComposeMail> {
 
     _subject = _subject?.trim() ?? '';
     if ((_subject?.isEmpty ?? false) && toEmails.isEmpty && ccEmails.isEmpty && bccEmails.isEmpty && _bodyController.document.isEmpty() && sendAttachments.isEmpty) {
-      print("emptyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
+      Navigator.pop(context);
       return;
     }
     await mailService.sendEmail(draft);

@@ -37,8 +37,9 @@ class NotificationService {
         uniqueEmails.add(doc.id);
       }
     }
-
-    await FlutterAppBadgeControl.updateBadgeCount(uniqueEmails.length);
+    if (await FlutterAppBadgeControl.isAppBadgeSupported()) {
+      await FlutterAppBadgeControl.updateBadgeCount(uniqueEmails.length);
+    }
   }
 
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =

@@ -36,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
       email = prefs.getString('email') ?? '';
       currentIndex = prefs.getInt('currentIndex') ?? 2;
     });
+    await notificationService.updateBadge();
 
     final id = FirebaseAuth.instance.currentUser!.uid;
     final docRef = FirebaseFirestore.instance.collection("users").doc(id);
