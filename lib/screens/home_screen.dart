@@ -51,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     FirebaseFirestore.instance
         .collection("mails")
         .where('to', arrayContains: email)
+        .limit(1)
         .snapshots()
         .listen((querySnapshot) async {
       for (var change in querySnapshot.docChanges) {

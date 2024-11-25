@@ -3,12 +3,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_app_badge_control/flutter_app_badge_control.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:gtv_mail/services/mail_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final NotificationService notificationService = NotificationService();
 
 class NotificationService {
   Future<void> updateBadge() async {
-    String email = FirebaseAuth.instance.currentUser?.email ?? "";
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String email = prefs.getString('email') ?? "";
     final toQuery = FirebaseFirestore.instance
         .collection("mails")
         .where('to', arrayContains: email)
