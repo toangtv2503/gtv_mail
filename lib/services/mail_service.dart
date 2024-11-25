@@ -6,8 +6,7 @@ import '../models/mail.dart';
 final MailService mailService = MailService();
 
 class MailService {
-
-  Future<void> sendEmail(Mail newMail) async{
+  Future<void> sendEmail(Mail newMail) async {
     await FirebaseFirestore.instance
         .collection("mails")
         .doc(newMail.uid)
@@ -45,7 +44,8 @@ class MailService {
       toStream,
       ccStream,
       bccStream,
-          (QuerySnapshot toSnapshot, QuerySnapshot ccSnapshot, QuerySnapshot bccSnapshot) {
+      (QuerySnapshot toSnapshot, QuerySnapshot ccSnapshot,
+          QuerySnapshot bccSnapshot) {
         final uniqueMails = <Mail>{};
 
         void addMails(QuerySnapshot snapshot) {
@@ -61,16 +61,15 @@ class MailService {
         addMails(ccSnapshot);
         addMails(bccSnapshot);
 
-        return uniqueMails.toList()..sort((a, b) => b.sentDate!.compareTo(a.sentDate!));
+        return uniqueMails.toList()
+          ..sort((a, b) => b.sentDate!.compareTo(a.sentDate!));
       },
     );
   }
 
   Future<Mail> getMailById(String id) async {
-    final docSnapshot = await FirebaseFirestore.instance
-        .collection("mails")
-        .doc(id)
-        .get();
+    final docSnapshot =
+        await FirebaseFirestore.instance.collection("mails").doc(id).get();
 
     if (docSnapshot.exists) {
       return Mail.fromJson(docSnapshot.data()!);
@@ -84,6 +83,25 @@ class MailService {
         .collection("mails")
         .doc(mail.uid)
         .update(mail.toJson());
+  }
+
+  Future<void> deleteMail(Mail mail) async {
+    await FirebaseFirestore.instance
+        .collection("mails")
+        .doc(mail.uid)
+        .delete();
+  }
+
+  Future<List<Mail>> getDrafts(String email) async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection("mails")
+        .where("from", isEqualTo: email)
+        .where('isDraft', isEqualTo: true)
+        .get();
+
+    return querySnapshot.docs.map((doc) {
+      return Mail.fromJson(doc.data());
+    }).toList();
   }
 
   bool isPrimaryMail(Mail mail) {
@@ -105,5 +123,4 @@ class MailService {
   bool isUpdateMail(Mail mail) {
     return mail.labels?.contains('Update') ?? false;
   }
-
 }

@@ -3,11 +3,13 @@ import 'dart:io';
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:gtv_mail/services/file_service.dart';
+import 'package:gtv_mail/services/mail_service.dart';
 import 'package:lottie/lottie.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
@@ -39,7 +41,10 @@ class _DetailMailState extends State<DetailMail> {
     super.initState();
   }
 
-  void init() {
+  void init() async {
+    Mail mail = await mailService.getMailById(widget.id);
+    mail.isRead = true;
+    await mailService.updateMail(mail);
     _bodyController.document = widget.mail.body!;
     loadReplies();
   }
@@ -62,9 +67,17 @@ class _DetailMailState extends State<DetailMail> {
     Navigator.pop(context);
   }
 
-  void _handleIsRead() {}
+  void _handleUnread() async {
+    Mail mail = await mailService.getMailById(widget.id);
+    mail.isRead = false;
+    await mailService.updateMail(mail).then((_) => Navigator.pop(context),);
+  }
 
-  void _handleDelete() {}
+  void _handleDelete() async {
+    Mail mail = await mailService.getMailById(widget.id);
+    mail.isDelete = true;
+    await mailService.updateMail(mail).then((_) => Navigator.pop(context, mail),);
+  }
 
   String _handleToCcBcc() {
     final message = <String>[
@@ -85,14 +98,14 @@ class _DetailMailState extends State<DetailMail> {
 
   void _handleReply() async {
     var result = await context.pushNamed('compose',
-        queryParameters: {'draft': 'reply'}, extra: {'id': widget.id});
+        queryParameters: {'type': 'reply'}, extra: {'id': widget.id});
   }
 
   void _handleReplyAll() {}
 
   void _handleForward() async {
     var result = await context.pushNamed('compose',
-        queryParameters: {'draft': 'forward'}, extra: {'id': widget.id});
+        queryParameters: {'type': 'forward'}, extra: {'id': widget.id});
   }
 
   void _openFile(attachment) async {
@@ -136,7 +149,7 @@ class _DetailMailState extends State<DetailMail> {
               onPressed: _handleDelete,
               icon: const Icon(Icons.delete_outline_outlined)),
           IconButton(
-              onPressed: _handleIsRead, icon: const Icon(Icons.mail_outline)),
+              onPressed: _handleUnread, icon: const Icon(Icons.mail_outline)),
           IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz))
         ],
       ),
@@ -251,8 +264,11 @@ class _DetailMailState extends State<DetailMail> {
                     ),
                     padding: const EdgeInsets.all(8),
                     child: QuillEditor.basic(
+                      focusNode: FocusNode(canRequestFocus: false),
                       controller: _bodyController,
                       configurations: QuillEditorConfigurations(
+                        showCursor: false,
+                        // keyboardAppearance: Theme.of(context).brightness,
                         placeholder: "Body",
                         checkBoxReadOnly: true,
                         enableInteractiveSelection: false,
@@ -284,8 +300,10 @@ class _DetailMailState extends State<DetailMail> {
                           ),
                           padding: const EdgeInsets.all(8),
                           child: QuillEditor.basic(
+                            focusNode: FocusNode(canRequestFocus: false),
                             controller: controller,
                             configurations: QuillEditorConfigurations(
+                              showCursor: false,
                               placeholder: "Body",
                               checkBoxReadOnly: true,
                               enableInteractiveSelection: false,

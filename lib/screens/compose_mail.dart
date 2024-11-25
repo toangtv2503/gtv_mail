@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:adaptive_dialog/adaptive_dialog.dart';
@@ -17,10 +18,12 @@ import 'package:gtv_mail/services/user_service.dart';
 import 'package:gtv_mail/utils/image_default.dart';
 import 'package:lottie/lottie.dart';
 import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:textfield_tags/textfield_tags.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:http/http.dart' as http;
 
 import '../services/mail_service.dart';
 import '../utils/app_fonts.dart';
@@ -28,9 +31,9 @@ import '../utils/app_theme.dart';
 import '../utils/button_data.dart';
 
 class ComposeMail extends StatefulWidget {
-  ComposeMail({super.key, this.isDraft = true, this.id, this.isReply, this.isForward});
-  bool? isDraft;
+  ComposeMail({super.key, this.isDraft, this.id, this.isReply, this.isForward});
   String? id;
+  bool? isDraft;
   bool? isReply;
   bool? isForward;
 
@@ -48,9 +51,12 @@ class _ComposeMailState extends State<ComposeMail> {
   var _key = GlobalKey<FormState>();
   bool isSending = false;
   String? _subject;
+  final TextEditingController _subjectController = TextEditingController();
   bool isShowMore = false;
   List<Attachment> attachments = [];
   List<PlatformFile> fileCached = [];
+
+  late Mail? mail;
 
   void init() async {
     prefs = await SharedPreferences.getInstance();
@@ -60,39 +66,28 @@ class _ComposeMailState extends State<ComposeMail> {
       _defaultFontFamily = prefs.getString('default_font_family') ?? "Arial";
     });
 
-    if (widget.isForward ?? false) {
-      Mail forwardMail = await mailService.getMailById(widget.id!);
-      setState(() {
-        _subject = forwardMail.subject;
-        _bodyController.document = forwardMail.body!;
-        attachments = forwardMail.attachments ?? [];
-      });
+    print("isDraft ${widget.isDraft}, isReply ${widget.isReply}, isForward ${widget.isForward}, isNew ${widget.id == null}, id: ${widget.id}");
+
+    if(widget.id?.isNotEmpty ?? false) {
+      mail = await mailService.getMailById(widget.id!);
+
+      _subjectController.text = mail!.subject ?? '';
+
+      _bodyController.document = mail!.body!;
+
+      if (mail!.attachments?.isNotEmpty ?? false) {
+          attachments = mail!.attachments!;
+      }
+
+      setState(() {});
     }
 
-    if (widget.isDraft ?? false) {
-      Mail draft = await mailService.getMailById(widget.id!);
-      setState(() {
-        _subject = draft.subject;
-        _bodyController.document = draft.body!;
-        attachments = draft.attachments ?? [];
-      });
-    }
   }
 
   @override
   void initState() {
     init();
     super.initState();
-  }
-
-  @override
-  void dispose() {
-    _bodyController.dispose();
-    _fromController.dispose();
-    _toEmailsController.dispose();
-    _ccEmailsController.dispose();
-    _bccEmailsController.dispose();
-    super.dispose();
   }
 
   void _handleDeleteFile(Attachment attachment) async {
@@ -113,7 +108,29 @@ class _ComposeMailState extends State<ComposeMail> {
   }
 
   void _openFile(Attachment attachment) async {
-    if (attachment.url != null) {
+    if (widget.isDraft ?? false) {
+      final uri = Uri.parse(attachment.url!);
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final tempDir = await getTemporaryDirectory();
+        final tempFilePath = '${tempDir.path}/${attachment.fileName}';
+
+        final file = File(tempFilePath);
+        await file.writeAsBytes(response.bodyBytes);
+
+        final result = await OpenFile.open(tempFilePath);
+
+        if (result.type != ResultType.done) {
+          showOkAlertDialog(
+            context: context,
+            title: "Error",
+            message: "Could not open the file.",
+          );
+        }
+      }
+    }
+    else if (attachment.url != null) {
       final filePath = attachment.url!;
       final result = await OpenFile.open(filePath);
 
@@ -124,6 +141,7 @@ class _ComposeMailState extends State<ComposeMail> {
           message: "Could not open the file.",
         );
       }
+
     }
   }
 
@@ -169,11 +187,6 @@ class _ComposeMailState extends State<ComposeMail> {
       List<String> bccEmails =
           _bccEmailsController.getTags?.map((tag) => tag.tag).toList() ?? [];
 
-      if (widget.isReply ?? false) {
-        Mail repMail = await mailService.getMailById(widget.id!);
-        toEmails.add(repMail.from!);
-      }
-
       if (toEmails.length + ccEmails.length + bccEmails.length == 0) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Please add at least one recipient!'),
@@ -203,40 +216,15 @@ class _ComposeMailState extends State<ComposeMail> {
         attachments: sendAttachments.isNotEmpty ? sendAttachments : null,
       );
 
-      if (widget.isReply ?? false) {
-        Mail repMail = await mailService.getMailById(widget.id!);
-
-        if (repMail.replies?.isEmpty ?? true) {
-          repMail.replies = [];
-        }
-        newMail.isReplyMail = true;
-        repMail.replies!.add(newMail);
-        await mailService.updateMail(repMail);
-      }
-
-      if (widget.isForward ?? false) {
-        Mail forwardMail = await mailService.getMailById(widget.id!);
-        newMail.attachments = forwardMail.attachments;
-      }
-
-      if (widget.isDraft ?? false) {
-        Mail draft = await mailService.getMailById(widget.id!);
-        newMail.uid = draft.uid;
-        newMail.isDraft = false;
-
-        await mailService.updateMail(newMail);
-      } else {
-        await mailService.sendEmail(newMail);
-      }
-
-      await notificationService.updateBadge(_fromController.text);
-
+      await mailService.sendEmail(newMail);
 
       Navigator.pop(context);
     }
   }
 
   void _saveDraft() async {
+    _key.currentState?.save();
+
     List<String> toEmails =
         _toEmailsController.getTags?.map((tag) => tag.tag).toList() ?? [];
     List<String> ccEmails =
@@ -264,7 +252,13 @@ class _ComposeMailState extends State<ComposeMail> {
       isDraft: true,
     );
 
+    _subject = _subject?.trim() ?? '';
+    if ((_subject?.isEmpty ?? false) && toEmails.isEmpty && ccEmails.isEmpty && bccEmails.isEmpty && _bodyController.document.isEmpty() && sendAttachments.isEmpty) {
+      print("emptyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
+      return;
+    }
     await mailService.sendEmail(draft);
+    Navigator.pop(context, draft);
   }
 
   @override
@@ -300,9 +294,12 @@ class _ComposeMailState extends State<ComposeMail> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-            onPressed:  (){
-              _saveDraft();
-              Navigator.pop(context);
+            onPressed:  () {
+              if (widget.id?.isEmpty ?? true) {
+                _saveDraft();
+              } else {
+                Navigator.pop(context);
+              }
             },
             icon: const Icon(Icons.close)),
         actions: [
@@ -325,7 +322,7 @@ class _ComposeMailState extends State<ComposeMail> {
           key: _key,
           child: Column(
             children: [
-              if (!(widget.isReply ?? false) || (widget.isForward ?? false)) Autocomplete<DynamicTagData<ButtonData>>(
+              Autocomplete<DynamicTagData<ButtonData>>(
                 optionsViewBuilder: (context, onSelected, options) {
                   return Align(
                     alignment: Alignment.topCenter,
@@ -400,7 +397,6 @@ class _ComposeMailState extends State<ComposeMail> {
                           .any((element) => element.tag == tag.tag)) {
                         return 'This email already enter';
                       }
-
                       return null;
                     },
                     inputFieldBuilder: (context, inputFieldValues) {
@@ -520,7 +516,6 @@ class _ComposeMailState extends State<ComposeMail> {
                         random.nextInt(256),
                         random.nextInt(256),
                         random.nextInt(256));
-                    print(user.email!);
                     return DynamicTagData<ButtonData>(
                       user.email!,
                       ButtonData(color, user.imageUrl!),
@@ -607,7 +602,6 @@ class _ComposeMailState extends State<ComposeMail> {
                             .any((element) => element.tag == tag.tag)) {
                           return 'This email already enter';
                         }
-
                         return null;
                       },
                       inputFieldBuilder: (context, inputFieldValues) {
@@ -921,7 +915,8 @@ class _ComposeMailState extends State<ComposeMail> {
               const SizedBox(
                 height: 8,
               ),
-              if (!(widget.isForward ?? false))TextFormField(
+              TextFormField(
+                controller: _subjectController,
                 decoration: const InputDecoration(
                     border: UnderlineInputBorder(), hintText: "Subject"),
                 validator: (value) {
@@ -967,7 +962,7 @@ class _ComposeMailState extends State<ComposeMail> {
                     showLineHeightButton: true,
                     showAlignmentButtons: true,
                     showDirection: true,
-                    decoration: BoxDecoration()),
+                    decoration: const BoxDecoration()),
               ),
               const SizedBox(
                 height: 8,
@@ -997,9 +992,9 @@ class _ComposeMailState extends State<ComposeMail> {
                               }[_defaultFontSize]?.toDouble() ?? 14.0,
                               fontFamily: _defaultFontFamily,
                             ),
-                            HorizontalSpacing(0.0, 0.0),
-                            VerticalSpacing(10.0, 10.0),
-                            VerticalSpacing(1.5, 1.5),
+                            const HorizontalSpacing(0.0, 0.0),
+                            const VerticalSpacing(10.0, 10.0),
+                            const VerticalSpacing(1.5, 1.5),
                             null,
                           ),
                         ),
@@ -1044,7 +1039,7 @@ class _ComposeMailState extends State<ComposeMail> {
                                           ), // Attachment icon
                                           Text(
                                             attachment.fileName!,
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                                 fontWeight: FontWeight.bold),
                                             overflow: TextOverflow.ellipsis,
                                           ),

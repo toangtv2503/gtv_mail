@@ -11,6 +11,7 @@ import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/mail.dart';
+import '../services/mail_service.dart';
 import '../services/notification_service.dart';
 import '../services/user_service.dart';
 import '../utils/app_theme.dart';
@@ -24,10 +25,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  _handleComposeMail() async {
-    context.pushNamed('compose', queryParameters: {'draft': 'new'});
-  }
-
   late String email = '';
   late SharedPreferences prefs;
   late int currentIndex = -1;
@@ -42,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final id = FirebaseAuth.instance.currentUser!.uid;
     final docRef = FirebaseFirestore.instance.collection("users").doc(id);
+
     docRef.snapshots().listen(
       (event) async {
         setState(() {});
@@ -59,19 +57,48 @@ class _HomeScreenState extends State<HomeScreen> {
         if (change.type == DocumentChangeType.added) {
           var data = change.doc.data();
           if (data == null) continue;
+
           var newMail = Mail.fromJson(data);
+
+          DateTime sentDate = newMail.sentDate!;
+
+          if (sentDate.isBefore(DateTime.now().subtract(const Duration(seconds: 30)))) {
+            continue;
+          }
+
           if (newMail.isDraft) continue;
+
           NotificationService.showInstantNotification(newMail.from!, newMail.subject!);
           await notificationService.updateBadge(email);
         }
       }
     });
+
   }
 
   @override
   void initState() {
     init();
     super.initState();
+  }
+
+  void _handleDiscardDraft(Mail draft) async {
+    await mailService.deleteMail(draft);
+  }
+
+  _handleComposeMail() async {
+    var result = await context.pushNamed('compose', queryParameters: {'type': 'new'});
+
+    if (result.runtimeType == Mail) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Draft saved'),
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(label: 'Discard', onPressed: () => _handleDiscardDraft(result as Mail)),
+        ),
+      );
+
+    }
   }
 
   void _handleSignOut() {

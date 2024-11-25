@@ -50,30 +50,25 @@ final GoRouter appRouter = GoRouter(
             name: 'compose',
             path: '/compose',
             builder: (BuildContext context, GoRouterState state) {
-              final draftParam = state.uri.queryParameters['draft'];
+              final type = state.uri.queryParameters['type'];
               final extra = state.extra as Map<String, dynamic>?;
-              if (draftParam == 'new') {
-                return ComposeMail(isDraft: false);
-              } else if (draftParam == 'reply') {
-                return ComposeMail(
-                  id: extra!['id'] as String,
-                  isReply: true,
-                );
-              } else if (draftParam == 'forward') {
-                return ComposeMail(
-                  id: extra!['id'] as String,
-                  isForward: true
-                );
+
+              switch (type) {
+                case 'new':
+                  return ComposeMail();
+                case 'reply':
+                  return ComposeMail(isReply: true, id: extra!['id'],);
+                case 'forward':
+                  return ComposeMail(isForward: true, id: extra!['id'],);
+                case 'draft':
+                  return ComposeMail(isDraft: true, id: extra!['id'],);
+                default:
+                  return NotFoundScreen(
+                    url: state.uri.path,
+                  );
+
               }
-              else if (draftParam != null) {
-                return ComposeMail(
-                  id: draftParam,
-                  isReply: false,
-                  isDraft: true,
-                );
-              } else {
-                return ComposeMail(isDraft: false);
-              }
+
             },
           ),
           GoRoute(

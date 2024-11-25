@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gtv_mail/models/mail.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:gtv_mail/utils/image_default.dart';
 import 'package:http/http.dart' as http;
@@ -128,4 +129,5 @@ class UserService {
         .doc(user.uid)
         .update(user.toJson());
   }
+
 }

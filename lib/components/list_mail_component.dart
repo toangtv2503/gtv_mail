@@ -32,9 +32,46 @@ class _ListMailComponentState extends State<ListMailComponent>
 
   late Map<String, MyUser> userCache = Map();
 
+  late List<Mail> drafts;
+
   void init() async {
     userCache = await userService.fetchSenderCached();
+    drafts = await mailService.getDrafts(widget.userEmail);
+
+    listenDraft();
     setState(() {});
+  }
+
+  void listenDraft() {
+    FirebaseFirestore.instance
+        .collection("mails")
+        .where("from", isEqualTo: widget.userEmail)
+        .where('isDraft', isEqualTo: true)
+        .snapshots()
+        .listen((querySnapshot) async {
+      for (var change in querySnapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          var data = change.doc.data();
+          if (data == null) continue;
+
+          var newMail = Mail.fromJson(data);
+
+          DateTime sentDate = newMail.sentDate!;
+
+          if (sentDate.isBefore(DateTime.now().subtract(const Duration(seconds: 60)))) {
+            continue;
+          }
+
+          drafts = await mailService.getDrafts(widget.userEmail);
+          setState(() {});
+        }
+      }
+    });
+  }
+
+  void _handleUndoDelete(Mail mailDelete)async {
+    mailDelete.isDelete = false;
+    await mailService.updateMail(mailDelete);
   }
 
   @override
@@ -51,29 +88,55 @@ class _ListMailComponentState extends State<ListMailComponent>
     super.initState();
   }
 
-  void _handleDetailMail(Mail mail, MyUser senderInfo) {
+  void _handleDetailMail(Mail mail, MyUser senderInfo) async {
     if (widget.category == 'Drafts') {
-      context.pushNamed('compose', queryParameters: {'draft': mail.uid});
+      var result = await context.pushNamed('compose',
+          queryParameters: {'type': 'draft'}, extra: {'id': mail.uid!});
+
     } else {
-      context.pushNamed('detail',
+      var result = await context.pushNamed('detail',
           pathParameters: {'id': mail.uid!},
           extra: {'mail': mail, 'senderInfo': senderInfo});
+
+      if (result.runtimeType == Mail) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('1 item has been moved to the trash.'),
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(label: 'Undo', onPressed: () => _handleUndoDelete(result as Mail)),
+          ),
+        );
+      }
+
     }
 
   }
 
+  void _handleStaredMail(Mail mail) async {
+    mail.isStarred = !mail.isStarred;
+    await mailService.updateMail(mail);
+  }
+
   List<Mail> getMails(AsyncSnapshot<List<Mail>> snapshot){
-    if (widget.category == 'Primary') {
-      return snapshot.data!
-          .where((mail) => mailService.isPrimaryMail(mail) && !mail.isReplyMail && !mail.isDraft)
-          .toList();
+    switch (widget.category) {
+      case 'Primary':
+        return snapshot.data!
+            .where((mail) => mailService.isPrimaryMail(mail) && !mail.isReplyMail && !mail.isDraft && !mail.isDelete)
+            .toList();
+      case 'Drafts':
+        return drafts.toList().reversed.toList();
+      case 'Starred':
+        return snapshot.data!
+            .where((mail) => mailService.isPrimaryMail(mail) && !mail.isReplyMail && !mail.isDraft && mail.isStarred&& !mail.isDelete)
+            .toList();
+      case 'Trash':
+        return snapshot.data!
+            .where((mail) => mail.isDelete)
+            .toList();
+      default:
+        return [];
     }
-    if (widget.category == 'Drafts') {
-      return snapshot.data!
-          .where((mail) => mail.isDraft)
-          .toList();
-    }
-    return [];
+
   }
 
   @override
@@ -177,6 +240,7 @@ class _ListMailComponentState extends State<ListMailComponent>
                     ],
                   ),
                   child: ListTile(
+                    style: ListTileStyle.list,
                     onTap: () => _handleDetailMail(
                         mails[index], userCache[mails[index].from]!),
                     leading: CircleAvatar(
@@ -207,13 +271,15 @@ class _ListMailComponentState extends State<ListMailComponent>
                     ),
                     title: Text(
                       userCache[mails[index].from]?.name! ?? 'Sender',
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: (mails[index].isRead ? Theme.of(context).textTheme.titleMedium : Theme.of(context).textTheme.titleLarge)
+                          ?.merge(TextStyle(color: mails[index].isRead ? Colors.grey : Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black)),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     subtitle: Text(
                       mails[index].subject!,
-                      style: Theme.of(context).textTheme.titleSmall,
+                      style: (mails[index].isRead ? Theme.of(context).textTheme.titleSmall : Theme.of(context).textTheme.titleMedium)
+                          ?.merge(TextStyle(color: mails[index].isRead ? Colors.grey : Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black)),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -227,12 +293,10 @@ class _ListMailComponentState extends State<ListMailComponent>
                             style: Theme.of(context).textTheme.titleSmall,
                           ),
                           IconButton(
-                            onPressed: () {},
+                            onPressed: () => _handleStaredMail(mails[index]),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
-                            icon: const Icon(
-                              Icons.star_border_outlined,
-                            ),
+                            icon: mails[index].isStarred ? const Icon(Icons.star, color: AppTheme.yellowColor,) : const Icon(Icons.star_border_outlined),
                           ),
                         ],
                       ),
