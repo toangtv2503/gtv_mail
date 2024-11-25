@@ -978,6 +978,8 @@ class _ComposeMailState extends State<ComposeMail> {
                     child: QuillEditor.basic(
                       controller: _bodyController,
                       configurations: QuillEditorConfigurations(
+                        showCursor: true,
+                        keyboardAppearance: Theme.of(context).brightness,
                         placeholder: "Body",
                         customStyles: DefaultStyles(
                           paragraph: DefaultTextBlockStyle(
