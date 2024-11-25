@@ -18,6 +18,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/mail.dart';
+import '../services/notification_service.dart';
 import '../utils/app_theme.dart';
 
 class DetailMail extends StatefulWidget {
@@ -45,6 +46,7 @@ class _DetailMailState extends State<DetailMail> {
     Mail mail = await mailService.getMailById(widget.id);
     mail.isRead = true;
     await mailService.updateMail(mail);
+    await notificationService.updateBadge();
     _bodyController.document = widget.mail.body!;
     loadReplies();
   }

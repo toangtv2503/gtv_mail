@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
     docRef.snapshots().listen(
       (event) async {
         setState(() {});
-        await notificationService.updateBadge(email);
+        await notificationService.updateBadge();
       },
       onError: (error) => print("Listen failed: $error"),
     );
@@ -69,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (newMail.isDraft) continue;
 
           NotificationService.showInstantNotification(newMail.from!, newMail.subject!);
-          await notificationService.updateBadge(email);
+          await notificationService.updateBadge();
         }
       }
     });
