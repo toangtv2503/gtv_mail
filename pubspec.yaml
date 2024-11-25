@@ -71,7 +71,10 @@ dependencies:
   settings_ui: ^2.0.2
   animated_toggle_switch: ^0.8.3
   app_settings: ^5.1.1
-  notification_permissions: ^0.6.1
+  notification_permissions:
+    git:
+      url: https://github.com/phuongtoan521h0486/flutter_notification_permissions.git
+      ref: master
   flutter_app_badge_control: ^0.0.2
   flutter_local_notifications: ^18.0.1
 

@@ -888,10 +888,11 @@ packages:
   notification_permissions:
     dependency: "direct main"
     description:
-      name: notification_permissions
-      sha256: e62e7fbd4b64941764778fc957224567aff10cdc8b0227046bd0a4b9db7b47a6
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: master
+      resolved-ref: "72ac52fe28a532cd2bdd048d7ee5a523a2efa2e7"
+      url: "https://github.com/phuongtoan521h0486/flutter_notification_permissions.git"
+    source: git
     version: "0.6.1"
   octo_image:
     dependency: transitive
