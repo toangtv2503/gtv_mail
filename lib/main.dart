@@ -45,7 +45,6 @@ void main() async {
     defaultStyle: dialogTheme[prefs.getString('dialog_theme') ?? 'Default'] ??
         AdaptiveStyle.adaptive,
   );
-  FlutterNativeSplash.remove();
 
   runApp(MyApp(
     initialTheme: [
@@ -56,10 +55,27 @@ void main() async {
   ));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   MyApp({super.key, required this.initialTheme});
 
   AdaptiveThemeMode initialTheme;
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+
+  void initialization() async {
+    await Future.delayed(const Duration(seconds: 3));
+    FlutterNativeSplash.remove();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initialization();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +83,7 @@ class MyApp extends StatelessWidget {
       debugShowFloatingThemeButton: false,
       light: AppTheme.lightTheme,
       dark: AppTheme.darkTheme,
-      initial: initialTheme,
+      initial: widget.initialTheme,
       builder: (theme, darkTheme) => MaterialApp.router(
         title: "GTV Mail",
         debugShowCheckedModeBanner: false,
