@@ -10,11 +10,14 @@ import 'package:gtv_mail/services/notification_service.dart';
 import 'package:gtv_mail/utils/app_routes.dart';
 import 'package:gtv_mail/utils/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+
 
 import 'firebase_options.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   await NotificationService.init();
 
@@ -42,6 +45,7 @@ void main() async {
     defaultStyle: dialogTheme[prefs.getString('dialog_theme') ?? 'Default'] ??
         AdaptiveStyle.adaptive,
   );
+  FlutterNativeSplash.remove();
 
   runApp(MyApp(
     initialTheme: [

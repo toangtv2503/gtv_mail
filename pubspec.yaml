@@ -77,6 +77,7 @@ dependencies:
       ref: master
   flutter_app_badge_control: ^0.0.2
   flutter_local_notifications: ^18.0.1
+  flutter_native_splash: ^2.4.3
 
 dev_dependencies:
   flutter_test:
