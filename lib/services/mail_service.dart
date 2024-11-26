@@ -113,14 +113,15 @@ class MailService {
   }
 
   bool isPromotionalMail(Mail mail) {
-    return mail.labels?.contains('Promotion') ?? false;
+    return mail.subject?.contains('Promotion') ?? false;
   }
 
   bool isSocialMail(Mail mail) {
-    return mail.labels?.contains('Social') ?? false;
+    return mail.subject?.contains('Social') ?? false;
   }
 
   bool isUpdateMail(Mail mail) {
-    return mail.labels?.contains('Update') ?? false;
+    return mail.subject?.contains('Update') ?? false;
   }
+
 }

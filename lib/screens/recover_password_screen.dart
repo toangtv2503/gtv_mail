@@ -5,7 +5,6 @@ import 'package:bcrypt/bcrypt.dart';
 import 'package:easy_stepper/easy_stepper.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:gtv_mail/services/user_service.dart';

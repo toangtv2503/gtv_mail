@@ -3,19 +3,18 @@ import 'dart:io';
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:gtv_mail/services/file_service.dart';
 import 'package:gtv_mail/services/mail_service.dart';
-import 'package:lottie/lottie.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:http/http.dart' as http;
 
 import '../models/mail.dart';
 import '../services/notification_service.dart';
@@ -72,13 +71,17 @@ class _DetailMailState extends State<DetailMail> {
   void _handleUnread() async {
     Mail mail = await mailService.getMailById(widget.id);
     mail.isRead = false;
-    await mailService.updateMail(mail).then((_) => Navigator.pop(context),);
+    await mailService.updateMail(mail).then(
+          (_) => Navigator.pop(context),
+        );
   }
 
   void _handleDelete() async {
     Mail mail = await mailService.getMailById(widget.id);
     mail.isDelete = true;
-    await mailService.updateMail(mail).then((_) => Navigator.pop(context, mail),);
+    await mailService.updateMail(mail).then(
+          (_) => Navigator.pop(context, mail),
+        );
   }
 
   String _handleToCcBcc() {
@@ -138,6 +141,13 @@ class _DetailMailState extends State<DetailMail> {
     }
   }
 
+  void _handleStaredMail() async {
+    var mail = widget.mail;
+    mail.isStarred = !mail.isStarred;
+    await mailService.updateMail(mail);
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -163,7 +173,13 @@ class _DetailMailState extends State<DetailMail> {
               style: Theme.of(context).textTheme.displaySmall,
             ),
             trailing: IconButton(
-                onPressed: () {}, icon: const Icon(Icons.star_border)),
+                onPressed: _handleStaredMail,
+                icon: widget.mail.isStarred
+                    ? const Icon(
+                        Icons.star,
+                        color: AppTheme.yellowColor,
+                      )
+                    : const Icon(Icons.star_border_outlined)),
           ),
           ListTile(
             leading: CircleAvatar(
@@ -252,14 +268,14 @@ class _DetailMailState extends State<DetailMail> {
                 ],
               ),
             ),
-          Expanded(
-            flex: 5,
+          SizedBox(
+            height: 600,
             child: SingleChildScrollView(
               child: Column(children: [
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Container(
-                    height: 580,
+                    height: 400,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       color: Theme.of(context).primaryColor,
@@ -285,42 +301,49 @@ class _DetailMailState extends State<DetailMail> {
                   ),
                 ),
                 if (widget.mail.replies?.isNotEmpty ?? false)
-                  Container(
-                    height: 580,
-                    child: ListView.builder(
+                  Padding(
                     padding: const EdgeInsets.all(16.0),
-                    itemCount: controllers.length,
-                    itemBuilder: (context, index) {
-                      final controller = controllers[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
-                        child: Container(
-                          height: 580,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: Theme.of(context).primaryColor,
-                          ),
-                          padding: const EdgeInsets.all(8),
-                          child: QuillEditor.basic(
-                            focusNode: FocusNode(canRequestFocus: false),
-                            controller: controller,
-                            configurations: QuillEditorConfigurations(
-                              showCursor: false,
-                              placeholder: "Body",
-                              checkBoxReadOnly: true,
-                              enableInteractiveSelection: false,
-                              onLaunchUrl: (url) async {
-                                await launchUrl(
-                                  Uri.parse(url),
-                                  mode: LaunchMode.externalApplication,
-                                );
-                              },
+                    child: Container(
+                      height: 400,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        color: Theme.of(context).primaryColor,
+                      ),
+                      child: ListView.separated(
+                        separatorBuilder: (context, index) => const Divider(thickness: 2, color: Colors.black, endIndent: 100, indent: 100,),
+                        itemCount: controllers.length,
+                        itemBuilder: (context, index) {
+                          final controller = controllers[index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                            child: Container(
+                              height: 580,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              padding: const EdgeInsets.all(8),
+                              child: QuillEditor.basic(
+                                focusNode: FocusNode(canRequestFocus: false),
+                                controller: controller,
+                                configurations: QuillEditorConfigurations(
+                                  showCursor: false,
+                                  placeholder: "Body",
+                                  checkBoxReadOnly: true,
+                                  enableInteractiveSelection: false,
+                                  onLaunchUrl: (url) async {
+                                    await launchUrl(
+                                      Uri.parse(url),
+                                      mode: LaunchMode.externalApplication,
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      );
-                    },
-                                    ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
               ]),
             ),

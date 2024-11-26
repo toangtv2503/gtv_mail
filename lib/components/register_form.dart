@@ -1,18 +1,16 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:bcrypt/bcrypt.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:country_flags/country_flags.dart';
 import 'package:country_phone_validator/country_phone_validator.dart';
-
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gtv_mail/components/otp_dialog.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:gtv_mail/services/user_service.dart';
 import 'package:gtv_mail/utils/country_codes.dart';
-import 'package:gtv_mail/components/otp_dialog.dart';
 import 'package:lottie/lottie.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';

@@ -1,4 +1,5 @@
 import 'package:flutter_quill/flutter_quill.dart';
+
 import 'attachment.dart';
 
 class Mail {

@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:gtv_mail/models/mail.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:gtv_mail/utils/image_default.dart';
 import 'package:http/http.dart' as http;
@@ -59,9 +58,9 @@ class UserService {
 
   Future<void> signInWithCustomToken(String uid) async {
     try {
-      // final response = await http.get(Uri.parse('https://us-central1-gtv-mail.cloudfunctions.net/generateCustomToken?uid=$uid'));
-      final response = await http.get(Uri.parse(
-          'http://10.0.2.2:5001/gtv-mail/us-central1/generateCustomToken?uid=$uid'));
+      final response = await http.get(Uri.parse('https://us-central1-gtv-mail.cloudfunctions.net/generateCustomToken?uid=$uid'));
+      // final response = await http.get(Uri.parse(
+      //     'http://10.0.2.2:5001/gtv-mail/us-central1/generateCustomToken?uid=$uid'));
 
       if (response.statusCode == 200) {
         final customToken = json.decode(response.body)['customToken'];

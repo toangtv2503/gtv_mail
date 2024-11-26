@@ -6,7 +6,6 @@ import 'package:flutter_app_badge_control/flutter_app_badge_control.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:gtv_mail/components/list_mail_component.dart';
-import 'package:gtv_mail/models/user.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -27,14 +26,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late String email = '';
   late SharedPreferences prefs;
-  late int currentIndex = -1;
+  late int currentIndex = 2;
   late String currentCategoryName = "Primary";
 
   void init() async {
     prefs = await SharedPreferences.getInstance();
     setState(() {
       email = prefs.getString('email') ?? '';
-      currentIndex = prefs.getInt('currentIndex') ?? 2;
     });
     await notificationService.updateBadge();
 
@@ -68,13 +66,13 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           if (newMail.isDraft) continue;
+          if (!(newMail.to?.contains(email) ?? false)) continue;
 
           NotificationService.showInstantNotification(newMail.from!, newMail.subject!);
           await notificationService.updateBadge();
         }
       }
     });
-
   }
 
   @override
@@ -102,11 +100,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _handleSignOut() {
-    prefs.remove('currentIndex');
-    prefs.remove('email');
-    FlutterAppBadgeControl.updateBadgeCount(0);
-    FirebaseAuth.instance.signOut();
+  void _handleSignOut() async{
+    await prefs.remove('email');
+    await FlutterAppBadgeControl.updateBadgeCount(0);
+    await FirebaseAuth.instance.signOut();
   }
 
   void _handleOpenProfile() async {
@@ -121,7 +118,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     setState(() {
       currentIndex = index;
-      prefs.setInt('currentIndex', index);
     });
     Navigator.pop(context);
 

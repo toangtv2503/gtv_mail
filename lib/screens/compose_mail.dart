@@ -6,6 +6,7 @@ import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
@@ -13,17 +14,16 @@ import 'package:gtv_mail/models/attachment.dart';
 import 'package:gtv_mail/models/mail.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:gtv_mail/services/file_service.dart';
-import 'package:gtv_mail/services/notification_service.dart';
 import 'package:gtv_mail/services/user_service.dart';
 import 'package:gtv_mail/utils/image_default.dart';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:textfield_tags/textfield_tags.dart';
 import 'package:uuid/uuid.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:http/http.dart' as http;
 
 import '../services/mail_service.dart';
 import '../utils/app_fonts.dart';
@@ -42,7 +42,7 @@ class ComposeMail extends StatefulWidget {
 }
 
 class _ComposeMailState extends State<ComposeMail> {
-  late String _defaultFontSize = 'Medium';
+  late String _defaultFontSize = 'Normal';
   late String _defaultFontFamily = "Arial";
 
   final QuillController _bodyController = QuillController.basic();
@@ -62,26 +62,47 @@ class _ComposeMailState extends State<ComposeMail> {
     prefs = await SharedPreferences.getInstance();
     setState(() {
       _fromController.text = prefs.getString('email') ?? '';
-      _defaultFontSize = prefs.getString('default_font_size') ?? "Medium";
+      _defaultFontSize = prefs.getString('default_font_size') ?? "Normal";
       _defaultFontFamily = prefs.getString('default_font_family') ?? "Arial";
     });
 
-    print("isDraft ${widget.isDraft}, isReply ${widget.isReply}, isForward ${widget.isForward}, isNew ${widget.id == null}, id: ${widget.id}");
+    loadContent();
+  }
 
+  void loadContent() async {
+    print("isDraft ${widget.isDraft}, isReply ${widget.isReply}, isForward ${widget.isForward}, isNew ${widget.id == null}, id: ${widget.id}");
     if(widget.id?.isNotEmpty ?? false) {
       mail = await mailService.getMailById(widget.id!);
 
-      _subjectController.text = mail!.subject ?? '';
-
-      _bodyController.document = mail!.body!;
-
-      if (mail!.attachments?.isNotEmpty ?? false) {
+      if (widget.isDraft ?? false) {
+        _subjectController.text = mail!.subject ?? 'Draft';
+        _bodyController.document = mail!.body!;
+        if (mail!.attachments?.isNotEmpty ?? false) {
           attachments = mail!.attachments!;
+        }
+      } else if (widget.isReply ?? false) {
+        _subjectController.text = 'Re: ${mail!.subject ?? ''}';
+        _bodyController.document = mail!.body!;
+        _bodyController.document.insert(0,
+          "At: ${DateFormat('E, dd MMM yyyy \'at\' hh:mm a').format(mail!.sentDate!)}\n"
+          "${mail!.from} wrote: \n",
+        );
+      } else if (widget.isForward ?? false) {
+        _subjectController.text = 'Fwd: ${mail!.subject ?? ''}';
+        _bodyController.document = mail!.body!;
+        _bodyController.document.insert(0,
+            "------Mail had been forward------\n"
+            "From: ${mail!.from}\n"
+            "Date: ${DateFormat('E, dd MMM yyyy \'at\' hh:mm a').format(mail!.sentDate!)}\n"
+            "To: ${mail!.to!.first}\n\n",
+        );
+        if (mail!.attachments?.isNotEmpty ?? false) {
+          attachments = mail!.attachments!;
+        }
       }
 
       setState(() {});
     }
-
   }
 
   @override
@@ -206,7 +227,7 @@ class _ComposeMailState extends State<ComposeMail> {
       String uid = const Uuid().v8();
       Mail newMail = Mail(
         uid: uid,
-        from: _fromController.text.isNotEmpty ? _fromController.text: "Draft mail",
+        from: _fromController.text.isNotEmpty ? _fromController.text: "Draft",
         subject: _subject,
         to: toEmails.isEmpty ? null : toEmails,
         cc: ccEmails.isEmpty ? null : ccEmails,
@@ -215,6 +236,19 @@ class _ComposeMailState extends State<ComposeMail> {
         sentDate: DateTime.now(),
         attachments: sendAttachments.isNotEmpty ? sendAttachments : null,
       );
+
+      if(widget.id?.isNotEmpty ?? false) {
+        if(widget.isReply ?? false) {
+          newMail.isReplyMail = true;
+          mail = await mailService.getMailById(widget.id!);
+          if (mail!.replies?.isEmpty ?? true) {
+            mail!.replies = [newMail];
+          } else {
+            mail!.replies!.add(newMail);
+          }
+          await mailService.updateMail(mail!);
+        }
+      }
 
       await mailService.sendEmail(newMail);
 
@@ -257,6 +291,9 @@ class _ComposeMailState extends State<ComposeMail> {
       Navigator.pop(context);
       return;
     }
+
+    if (_subject?.isEmpty ?? true) draft.subject = "Draft";
+
     await mailService.sendEmail(draft);
     Navigator.pop(context, draft);
   }
@@ -945,7 +982,7 @@ class _ComposeMailState extends State<ComposeMail> {
                           'Huge': '64',
                           'Clear': '0',
                         },
-                          initialValue: _defaultFontSize ?? 'Medium',
+                          initialValue: _defaultFontSize ?? 'Normal',
                           onSelected: (value) => setState(() {
                             _defaultFontSize = value;
                           }),

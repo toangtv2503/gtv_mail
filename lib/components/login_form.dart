@@ -1,19 +1,13 @@
-import 'dart:convert';
-
 import 'package:adaptive_dialog/adaptive_dialog.dart';
-import 'package:bcrypt/bcrypt.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:go_router/go_router.dart';
-import 'package:gtv_mail/components/list_mail_component.dart';
-import 'package:gtv_mail/models/user.dart';
-import 'package:gtv_mail/services/user_service.dart';
-import 'package:http/http.dart' as http;
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import 'package:gtv_mail/models/user.dart';
+import 'package:gtv_mail/services/user_service.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'otp_dialog.dart';
 
 class LoginForm extends StatefulWidget {
@@ -60,8 +54,8 @@ class _LoginFormState extends State<LoginForm> {
             phoneNumber: user.phone,
             timeout: const Duration(seconds: 60),
             verificationCompleted: (_) {},
-            verificationFailed: (FirebaseAuthException e) {
-                            showOkAlertDialog(
+            verificationFailed: (FirebaseAuthException e) async{
+                            await showOkAlertDialog(
                 context: context,
                 title: "Verification Failed",
                 message: "An error occurred. Please try again.",
@@ -75,12 +69,23 @@ class _LoginFormState extends State<LoginForm> {
                     OtpDialog(verificationId: verificationId),
               );
 
-              await FirebaseAuth.instance
-                  .signInWithCredential(credential);
+              try {
+                await FirebaseAuth.instance
+                    .signInWithCredential(credential);
+                prefs.setString('email', email!);
 
-              prefs.setString('email', email!);
+                Navigator.pop(context);
+              } catch (e) {
+                setState(() {
+                  _isLoading = false;
+                });
 
-              Navigator.pop(context);
+                showOkAlertDialog(
+                  context: context,
+                  title: "Verification Failed",
+                  message: "Your OTP code is wrong.",
+                );
+              }
             },
             codeAutoRetrievalTimeout: (_) {},
           );

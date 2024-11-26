@@ -10,6 +10,7 @@ import 'package:gtv_mail/services/notification_service.dart';
 import 'package:gtv_mail/utils/app_routes.dart';
 import 'package:gtv_mail/utils/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'firebase_options.dart';
 
 void main() async {
@@ -59,7 +60,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AdaptiveTheme(
-      debugShowFloatingThemeButton: true,
+      debugShowFloatingThemeButton: false,
       light: AppTheme.lightTheme,
       dark: AppTheme.darkTheme,
       initial: initialTheme,

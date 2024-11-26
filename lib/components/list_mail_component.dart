@@ -5,11 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
-import 'package:gtv_mail/components/register_form.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:gtv_mail/services/user_service.dart';
-import 'package:lottie/lottie.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 
 import '../models/mail.dart';
 import '../services/mail_service.dart';
@@ -119,16 +118,42 @@ class _ListMailComponentState extends State<ListMailComponent>
 
   List<Mail> getMails(AsyncSnapshot<List<Mail>> snapshot){
     switch (widget.category) {
+      case 'All inboxes':
+        return [...snapshot.data!
+        .where((mail) => !mail.isReplyMail  && !mail.isDelete)
+        , ...drafts.toList().reversed];
       case 'Primary':
         return snapshot.data!
             .where((mail) => mailService.isPrimaryMail(mail) && !mail.isReplyMail && !mail.isDraft && !mail.isDelete)
             .toList();
-      case 'Drafts':
-        return drafts.toList().reversed.toList();
+      case 'Social':
+        return snapshot.data!
+            .where((mail) => mailService.isSocialMail(mail) && !mail.isReplyMail && !mail.isDraft && !mail.isDelete)
+            .toList();
+      case 'Promotion':
+        return snapshot.data!
+            .where((mail) => mailService.isPromotionalMail(mail) && !mail.isReplyMail && !mail.isDraft && !mail.isDelete)
+            .toList();
+      case 'Update':
+        return snapshot.data!
+            .where((mail) => mailService.isUpdateMail(mail) && !mail.isReplyMail && !mail.isDraft && !mail.isDelete)
+            .toList();
       case 'Starred':
         return snapshot.data!
             .where((mail) => mailService.isPrimaryMail(mail) && !mail.isReplyMail && !mail.isDraft && mail.isStarred&& !mail.isDelete)
             .toList();
+      case 'Drafts':
+        return drafts.toList().reversed.toList();
+      case 'Snoozed':
+        return [];
+      case 'Important':
+        return [];
+      case 'Sent':
+        return snapshot.data!
+            .where((mail) => mail.from == widget.userEmail && !mail.isReplyMail && !mail.isDraft && !mail.isDelete)
+            .toList();
+      case 'Scheduled':
+        return [];
       case 'Trash':
         return snapshot.data!
             .where((mail) => mail.isDelete)
