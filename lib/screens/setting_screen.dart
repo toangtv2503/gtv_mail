@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
-
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
@@ -28,12 +28,18 @@ class _SettingScreenState extends State<SettingScreen>
     prefs = await SharedPreferences.getInstance();
 
     WidgetsBinding.instance.addObserver(this);
-    var status =
-        await NotificationPermissions.getNotificationPermissionStatus();
+    var status;
+    if (!kIsWeb) {
+      status = await NotificationPermissions.getNotificationPermissionStatus();
+    }
 
     setState(() {
       // general
-      isTurnOnNotification = status == PermissionStatus.granted;
+      if (kIsWeb) {
+        isTurnOnNotification = false;
+      } else {
+        isTurnOnNotification = status == PermissionStatus.granted;
+      }
 
       // theme
       currentSettingTheme = prefs.getString('setting_theme') ?? 'Default';
@@ -74,6 +80,7 @@ class _SettingScreenState extends State<SettingScreen>
   }
 
   Future<void> _checkNotificationPermission() async {
+    if (kIsWeb) return;
     isTurnOnNotification =
         await NotificationPermissions.getNotificationPermissionStatus() ==
             PermissionStatus.granted;

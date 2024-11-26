@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_app_badge_control/flutter_app_badge_control.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -10,6 +10,7 @@ final NotificationService notificationService = NotificationService();
 
 class NotificationService {
   Future<void> updateBadge() async {
+    if (kIsWeb) return;
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String email = prefs.getString('email') ?? "";
     final toQuery = FirebaseFirestore.instance
@@ -38,7 +39,7 @@ class NotificationService {
         uniqueEmails.add(doc.id);
       }
     }
-    if (await FlutterAppBadgeControl.isAppBadgeSupported()) {
+    if (await FlutterAppBadgeControl.isAppBadgeSupported() && !kIsWeb) {
       await FlutterAppBadgeControl.updateBadgeCount(uniqueEmails.length);
     }
   }
@@ -50,6 +51,7 @@ class NotificationService {
       NotificationResponse notificationResponse) async {}
 
   static Future<void> init() async {
+    if (kIsWeb) return;
     const AndroidInitializationSettings androidInitializationSettings =
         AndroidInitializationSettings("@mipmap/launcher_icon");
 
@@ -66,7 +68,6 @@ class NotificationService {
       onDidReceiveNotificationResponse: onDidReceiveNotification,
       onDidReceiveBackgroundNotificationResponse: onDidReceiveNotification,
     );
-
 
     if (Platform.isIOS) {
       await flutterLocalNotificationsPlugin
@@ -89,6 +90,7 @@ class NotificationService {
   }
 
   static Future<void> showInstantNotification(String title, String body) async {
+    if (kIsWeb) return;
     const NotificationDetails platformChannelSpecifics = NotificationDetails(
         android: AndroidNotificationDetails("channelId", "channel_Name",
             importance: Importance.high, priority: Priority.high),
