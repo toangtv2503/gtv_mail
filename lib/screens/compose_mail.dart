@@ -69,7 +69,6 @@ class _ComposeMailState extends State<ComposeMail> {
       });
     }
 
-
     loadContent();
   }
 
@@ -231,7 +230,7 @@ class _ComposeMailState extends State<ComposeMail> {
       String uid = const Uuid().v8();
       Mail newMail = Mail(
         uid: uid,
-        from: _fromController.text.isNotEmpty ? _fromController.text: "Draft",
+        from: _fromController.text,
         subject: _subject,
         to: toEmails.isEmpty ? null : toEmails,
         cc: ccEmails.isEmpty ? null : ccEmails,
