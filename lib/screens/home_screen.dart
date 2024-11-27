@@ -106,7 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleSignOut() async{
-    await prefs.remove('email');
     await FlutterAppBadgeControl.updateBadgeCount(0);
     await FirebaseAuth.instance.signOut();
   }

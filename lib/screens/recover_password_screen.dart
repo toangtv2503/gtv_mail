@@ -73,7 +73,6 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
         showOkAlertDialog(context: context, title: "Your email does not exist");
       } else {
         MyUser user = await userService.getUserByEmail(_email!);
-        prefs.setString('email', _email!);
         setState(() {
           _controller = TextEditingController();
           _phoneNumber = user.phone!;

@@ -60,11 +60,15 @@ class _ComposeMailState extends State<ComposeMail> {
 
   void init() async {
     prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _fromController.text = prefs.getString('email') ?? '';
-      _defaultFontSize = prefs.getString('default_font_size') ?? "Normal";
-      _defaultFontFamily = prefs.getString('default_font_family') ?? "Arial";
-    });
+    MyUser? user = await userService.getLoggedUser();
+    if(user != null) {
+      setState(() {
+        _fromController.text = user.email!;
+        _defaultFontSize = prefs.getString('default_font_size') ?? "Normal";
+        _defaultFontFamily = prefs.getString('default_font_family') ?? "Arial";
+      });
+    }
+
 
     loadContent();
   }
