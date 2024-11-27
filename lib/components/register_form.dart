@@ -150,9 +150,9 @@ class _RegisterFormState extends State<RegisterForm> {
                       password: BCrypt.hashpw(password.toString(), BCrypt.gensalt()));
 
                   await userService.registerAccount(newUser, user);
-
-                  var prefs = await SharedPreferences.getInstance();
-                  prefs.setString('email', email!);
+                  //
+                  // var prefs = await SharedPreferences.getInstance();
+                  // prefs.setString('email', email!);
 
                   context.pushNamed('home');
                 }

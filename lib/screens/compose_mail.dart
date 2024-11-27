@@ -1002,7 +1002,7 @@ class _ComposeMailState extends State<ComposeMail> {
                     decoration: const BoxDecoration()),
               ),
               const SizedBox(
-                height: 8,
+                height: 24,
               ),
               Expanded(
                 flex: 4,

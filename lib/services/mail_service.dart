@@ -104,6 +104,20 @@ class MailService {
     }).toList();
   }
 
+  Future<List<Mail>> getSent(String email) async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection("mails")
+        .where("from", isEqualTo: email)
+        .where('isDraft', isEqualTo: false)
+        .where('isDelete', isEqualTo: false)
+        .where('isReplyMail', isEqualTo: false)
+        .get();
+
+    return querySnapshot.docs.map((doc) {
+      return Mail.fromJson(doc.data());
+    }).toList();
+  }
+
   bool isPrimaryMail(Mail mail) {
     return !mail.isSpam && !mail.isDelete && !mail.isHidden;
   }

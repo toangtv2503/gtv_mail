@@ -35,6 +35,7 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
   int _remainingTime = 60;
   late Timer _timer;
   late SharedPreferences prefs;
+  late String vId = "";
 
   var _controller = TextEditingController();
 
@@ -80,11 +81,50 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
           _startCountdown();
           _activeStep = 1;
         });
+
+        await FirebaseAuth.instance.verifyPhoneNumber(
+          phoneNumber: _phoneNumber,
+          timeout: const Duration(seconds: 60),
+          verificationCompleted: (_) {},
+          verificationFailed: (FirebaseAuthException e) {
+            showOkAlertDialog(
+              context: context,
+              title: "Verification Failed",
+              message: "An error occurred. Please try again.",
+            );
+          },
+          codeSent: (String verificationId, int? resendToken) {
+            vId = verificationId;
+          },
+          codeAutoRetrievalTimeout: (_) {},
+        );
       }
     }
   }
 
   void _handleOTP() async {
+    PhoneAuthCredential credential = PhoneAuthProvider.credential(
+      verificationId: vId,
+      smsCode: _otp!,
+    );
+
+    try {
+      var result = await FirebaseAuth.instance.signInWithCredential(credential);
+
+      setState(() {
+        _timer.cancel();
+        _activeStep = 2;
+      });
+    } catch (e) {
+      showOkAlertDialog(
+        context: context,
+        title: "Verification Failed",
+        message: "The verification OTP is invalid",
+      );
+    }
+  }
+
+  void _resendOTP() async {
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: _phoneNumber,
       timeout: const Duration(seconds: 60),
@@ -96,32 +136,11 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
           message: "An error occurred. Please try again.",
         );
       },
-      codeSent: (String verificationId, int? resendToken) async {
-        PhoneAuthCredential credential = PhoneAuthProvider.credential(
-          verificationId: verificationId,
-          smsCode: _otp!,
-        );
-
-        try {
-          var result = await FirebaseAuth.instance.signInWithCredential(credential);
-          
-          setState(() {
-            _timer.cancel();
-            _activeStep = 2;
-          });
-        } catch (e) {
-          showOkAlertDialog(
-            context: context,
-            title: "Verification Failed",
-            message: "The verification OTP is invalid",
-          );
-        }
+      codeSent: (String verificationId, int? resendToken) {
+        vId = verificationId;
       },
       codeAutoRetrievalTimeout: (_) {},
     );
-  }
-
-  void _resendOTP() async {
     setState(() {
       _remainingTime = 60;
     });
@@ -160,7 +179,7 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
         leading: IconButton(onPressed: () {
           FirebaseAuth.instance.signOut();
           Navigator.pop(context);
-        }, icon: Icon(Icons.arrow_back)),
+        }, icon: const Icon(Icons.arrow_back)),
       ),
       body: SingleChildScrollView(
           child: Column(
@@ -170,7 +189,7 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
             showLoadingAnimation: true,
             stepRadius: 24,
             showStepBorder: false,
-            enableStepTapping: true,
+            enableStepTapping: false,
             unreachedStepBackgroundColor: AppTheme.blueColor,
             unreachedStepIconColor: AppTheme.whiteColor,
             unreachedStepTextColor: AppTheme.blueColor,

@@ -32,12 +32,14 @@ class _ListMailComponentState extends State<ListMailComponent>
   late Map<String, MyUser> userCache = Map();
 
   late List<Mail> drafts;
+  late List<Mail> sent;
 
   void init() async {
     userCache = await userService.fetchSenderCached();
     drafts = await mailService.getDrafts(widget.userEmail);
-
+    sent = await mailService.getSent(widget.userEmail);
     listenDraft();
+    listenSent();
     setState(() {});
   }
 
@@ -62,6 +64,32 @@ class _ListMailComponentState extends State<ListMailComponent>
           }
 
           drafts = await mailService.getDrafts(widget.userEmail);
+          setState(() {});
+        }
+      }
+    });
+  }
+
+  void listenSent() {
+    FirebaseFirestore.instance
+        .collection("mails")
+        .where("from", isEqualTo: widget.userEmail)
+        .snapshots()
+        .listen((querySnapshot) async {
+      for (var change in querySnapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          var data = change.doc.data();
+          if (data == null) continue;
+
+          var newMail = Mail.fromJson(data);
+
+          DateTime sentDate = newMail.sentDate!;
+
+          if (sentDate.isBefore(DateTime.now().subtract(const Duration(seconds: 60)))) {
+            continue;
+          }
+
+          drafts = await mailService.getSent(widget.userEmail);
           setState(() {});
         }
       }
@@ -149,9 +177,7 @@ class _ListMailComponentState extends State<ListMailComponent>
       case 'Important':
         return [];
       case 'Sent':
-        return snapshot.data!
-            .where((mail) => mail.from == widget.userEmail && !mail.isReplyMail && !mail.isDraft && !mail.isDelete)
-            .toList();
+        return sent.toList().reversed.toList();
       case 'Scheduled':
         return [];
       case 'Trash':

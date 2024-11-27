@@ -55,7 +55,7 @@ class _SettingScreenState extends State<SettingScreen>
               2;
 
       //font
-      currentFontSize = prefs.getString('default_font_size') ?? 'Medium';
+      currentFontSize = prefs.getString('default_font_size') ?? 'Normal';
       currentFontFamily = prefs.getString('default_font_family') ?? 'Arial';
     });
   }
@@ -100,7 +100,7 @@ class _SettingScreenState extends State<SettingScreen>
   int currentLightTheme = 2;
 
   //font
-  String currentFontSize = "Medium";
+  String currentFontSize = "Normal";
   String currentFontFamily = "Arial";
 
   @override

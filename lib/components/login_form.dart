@@ -72,7 +72,7 @@ class _LoginFormState extends State<LoginForm> {
               try {
                 await FirebaseAuth.instance
                     .signInWithCredential(credential);
-                prefs.setString('email', email!);
+                // prefs.setString('email', email!);
 
                 Navigator.pop(context);
               } catch (e) {
@@ -92,7 +92,7 @@ class _LoginFormState extends State<LoginForm> {
         } else {
           await userService.signInWithCustomToken(user.uid!);
 
-          prefs.setString('email', email!);
+          // prefs.setString('email', email!);
           Navigator.pop(context);
         }
       } else {

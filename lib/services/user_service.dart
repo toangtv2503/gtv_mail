@@ -129,4 +129,12 @@ class UserService {
         .update(user.toJson());
   }
 
+  Future<MyUser?> getLoggedUser() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      String id = user.uid;
+      return await getUserByID(id);
+    }
+    return null;
+  }
 }

@@ -6,6 +6,7 @@ import 'package:flutter_app_badge_control/flutter_app_badge_control.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:gtv_mail/components/list_mail_component.dart';
+import 'package:gtv_mail/models/user.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -31,9 +32,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void init() async {
     prefs = await SharedPreferences.getInstance();
-    setState(() {
-      email = prefs.getString('email') ?? '';
-    });
+    MyUser? user = await userService.getLoggedUser();
+    if (user != null) {
+      setState(() {
+        email = user.email!;
+      });
+    }
+
     await notificationService.updateBadge();
 
     final id = FirebaseAuth.instance.currentUser!.uid;
