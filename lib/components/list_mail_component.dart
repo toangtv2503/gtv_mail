@@ -53,9 +53,9 @@ class _ListMailComponentState extends State<ListMailComponent>
           'isShowAttachment': false,
         }));
 
-    setState(() {});
     await _fetchDisplayMode();
     _listenDisplayModeChange();
+    setState(() {});
   }
 
   @override
@@ -71,7 +71,12 @@ class _ListMailComponentState extends State<ListMailComponent>
       'isShowAttachment': false,
     });
     displayMode = jsonDecode(prefs.getString('default_display_mode') ?? defaultDisplayMode);
-    setState(() {});
+    if (mounted) {
+      setState(() {
+        // Update state
+      });
+    }
+
   }
 
   void _listenDisplayModeChange() {
