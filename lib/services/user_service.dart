@@ -10,8 +10,6 @@ import 'package:http/http.dart' as http;
 final UserService userService = UserService();
 
 class UserService {
-  User? getCurrentUser() => FirebaseAuth.instance.currentUser;
-
   Future<bool> checkPhoneNumberExists(String phone) async {
     final QuerySnapshot snapshot = await FirebaseFirestore.instance
         .collection('users')
@@ -58,7 +56,8 @@ class UserService {
 
   Future<void> signInWithCustomToken(String uid) async {
     try {
-      final response = await http.get(Uri.parse('https://us-central1-gtv-mail.cloudfunctions.net/generateCustomToken?uid=$uid'));
+      final response = await http.get(Uri.parse(
+          'https://us-central1-gtv-mail.cloudfunctions.net/generateCustomToken?uid=$uid'));
       // final response = await http.get(Uri.parse(
       //     'http://10.0.2.2:5001/gtv-mail/us-central1/generateCustomToken?uid=$uid'));
 
@@ -96,10 +95,8 @@ class UserService {
   }
 
   Future<MyUser> getUserByID(String id) async {
-    final docSnapshot = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(id)
-        .get();
+    final docSnapshot =
+        await FirebaseFirestore.instance.collection("users").doc(id).get();
 
     if (docSnapshot.exists) {
       return MyUser.fromJson(docSnapshot.data()!);
@@ -122,7 +119,8 @@ class UserService {
   }
 
   Future<void> updateUser(MyUser user) async {
-    await getCurrentUser()!.updateProfile(displayName: user.name, photoURL: user.imageUrl);
+    await FirebaseAuth.instance.currentUser!
+        .updateProfile(displayName: user.name, photoURL: user.imageUrl);
     await FirebaseFirestore.instance
         .collection("users")
         .doc(user.uid)

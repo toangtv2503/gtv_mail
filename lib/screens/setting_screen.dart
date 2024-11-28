@@ -57,6 +57,14 @@ class _SettingScreenState extends State<SettingScreen>
       //font
       currentFontSize = prefs.getString('default_font_size') ?? 'Normal';
       currentFontFamily = prefs.getString('default_font_family') ?? 'Arial';
+
+      //display
+      currentDisplayMode = jsonDecode(prefs.getString('default_display_mode') ??
+          jsonEncode({
+            'mode': 'Basic',
+            'isShowAvatar': true,
+            'isShowAttachment': false,
+          }))['mode'];
     });
   }
 
@@ -103,6 +111,9 @@ class _SettingScreenState extends State<SettingScreen>
   String currentFontSize = "Normal";
   String currentFontFamily = "Arial";
 
+  //display
+  String currentDisplayMode = "Default";
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -135,7 +146,8 @@ class _SettingScreenState extends State<SettingScreen>
                     );
                     return;
                   }
-                  AppSettings.openAppSettings(type: AppSettingsType.notification);
+                  AppSettings.openAppSettings(
+                      type: AppSettingsType.notification);
                 },
               ),
             ],
@@ -337,6 +349,65 @@ class _SettingScreenState extends State<SettingScreen>
                     prefs.setString('default_font_family', result);
                     setState(() {
                       currentFontFamily = result;
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+          SettingsSection(
+            title: const Text('Display'),
+            tiles: <SettingsTile>[
+              SettingsTile.navigation(
+                leading: const Icon(Icons.display_settings),
+                title: const Text('Display Mode'),
+                value: Text(currentDisplayMode),
+                onPressed: (context) async {
+                  final result = await showModalActionSheet<String>(
+                    context: context,
+                    title: 'Display Mode',
+                    actions: [
+                      const SheetAction(
+                        label: 'Lite',
+                        key: 'Lite',
+                      ),
+                      const SheetAction(
+                        label: 'Basic',
+                        key: 'Basic',
+                      ),
+                      const SheetAction(
+                        label: 'Detailed',
+                        key: 'Detailed',
+                      ),
+                    ],
+                  );
+
+                  if (result != null) {
+                    switch (result) {
+                      case 'Lite':
+                        prefs.setString('default_display_mode', jsonEncode({
+                          'mode': 'Lite',
+                          'isShowAvatar': false,
+                          'isShowAttachment': false,
+                        }));
+                        break;
+                      case 'Basic':
+                        prefs.setString('default_display_mode', jsonEncode({
+                          'mode': 'Basic',
+                          'isShowAvatar': true,
+                          'isShowAttachment': false,
+                        }));
+                        break;
+                      case 'Detailed':
+                        prefs.setString('default_display_mode', jsonEncode({
+                          'mode': 'Detailed',
+                          'isShowAvatar': true,
+                          'isShowAttachment': true,
+                        }));
+                        break;
+                    }
+                    setState(() {
+                      currentDisplayMode = result;
                     });
                   }
                 },

@@ -44,10 +44,6 @@ final List<Map<String, dynamic>> emailCategoriesMenu = [
     'icon': const Icon(Icons.send_outlined),
   },
   {
-    'title': 'Scheduled',
-    'icon': const Icon(Icons.cancel_schedule_send_outlined),
-  },
-  {
     'title': 'Drafts',
     'icon': const Icon(Icons.insert_drive_file_outlined),
   },

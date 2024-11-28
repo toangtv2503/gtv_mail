@@ -12,6 +12,7 @@ import 'package:lottie/lottie.dart';
 
 import '../services/user_service.dart';
 import '../utils/app_theme.dart';
+import '../utils/image_default.dart';
 
 class UserProfileScreen extends StatefulWidget {
   UserProfileScreen({super.key, required this.id});
@@ -22,6 +23,7 @@ class UserProfileScreen extends StatefulWidget {
 }
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
+  late MyUser user = MyUser();
   Widget buildEditIcon(Color color) => buildCircle(
         color: Colors.white,
         all: 3,
@@ -56,7 +58,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   var _key = GlobalKey<FormState>();
 
   void init() async {
-    MyUser user = await userService.getUserByID(widget.id);
+    user = await userService.getUserByID(widget.id);
     setState(() {
       _nameController.text = user.name!;
       _phoneController.text = user.phone!;
@@ -227,7 +229,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         onTap: _handleChangeAvatar,
                         customBorder: const CircleBorder(),
                         child: CachedNetworkImage(
-                          imageUrl: userService.getCurrentUser()!.photoURL!,
+                          imageUrl: user.imageUrl ?? DEFAULT_AVATAR,
                           imageBuilder: (context, imageProvider) => Container(
                             width: 128,
                             height: 128,

@@ -11,13 +11,16 @@ import 'package:gtv_mail/utils/app_routes.dart';
 import 'package:gtv_mail/utils/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  if (!kIsWeb) {
+    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  }
 
   await NotificationService.init();
 
@@ -67,8 +70,10 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
 
   void initialization() async {
-    await Future.delayed(const Duration(seconds: 3));
-    FlutterNativeSplash.remove();
+    if(!kIsWeb) {
+      await Future.delayed(const Duration(seconds: 2));
+      FlutterNativeSplash.remove();
+    }
   }
 
   @override

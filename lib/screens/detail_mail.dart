@@ -165,289 +165,307 @@ class _DetailMailState extends State<DetailMail> {
           IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz))
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            ListTile(
-              title: Text(
-                widget.mail.subject!,
-                style: Theme.of(context).textTheme.displaySmall,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight,
               ),
-              trailing: IconButton(
-                  onPressed: _handleStaredMail,
-                  icon: widget.mail.isStarred
-                      ? const Icon(
-                          Icons.star,
-                          color: AppTheme.yellowColor,
-                        )
-                      : const Icon(Icons.star_border_outlined)),
-            ),
-            ListTile(
-              leading: CircleAvatar(
-                backgroundColor: AppTheme.blueColor,
-                child: CachedNetworkImage(
-                  imageUrl: widget.sender.imageUrl!,
-                  imageBuilder: (context, imageProvider) => Container(
-                    decoration: BoxDecoration(
-                      border: const GradientBoxBorder(
-                        gradient: LinearGradient(colors: [
-                          AppTheme.redColor,
-                          AppTheme.greenColor,
-                          AppTheme.yellowColor,
-                          AppTheme.blueColor
-                        ]),
-                      ),
-                      shape: BoxShape.circle,
-                      image: DecorationImage(image: imageProvider),
-                    ),
-                  ),
-                  placeholder: (context, url) => Lottie.asset(
-                    'assets/lottiefiles/circle_loading.json',
-                    fit: BoxFit.fill,
-                  ),
-                  errorWidget: (context, url, error) => const Icon(Icons.error),
-                ),
-              ),
-              title: Text(widget.sender.name!),
-              subtitle: Row(
-                children: [
-                  Text(
-                    _handleToCcBcc(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  InkWell(
-                    onTap: () {
-                      setState(() {
-                        isShow = !isShow;
-                      });
-                    },
-                    child: Icon(isShow
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down),
-                  )
-                ],
-              ),
-            ),
-            if (isShow)
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  color: Theme.of(context).primaryColor,
-                  border: const Border(
-                    bottom: BorderSide(color: Colors.black),
-                    right: BorderSide(color: Colors.black),
-                    top: BorderSide(color: Colors.black),
-                    left: BorderSide(color: Colors.black),
-                  ),
-                ),
-                margin: const EdgeInsets.symmetric(horizontal: 16.0),
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: ListView(
-                  shrinkWrap: true,
+              child: IntrinsicHeight(
+                child: Column(
                   children: [
                     ListTile(
-                      leading: const Text("From"),
-                      title: Text(widget.mail.from!),
+                      title: Text(
+                        widget.mail.subject!,
+                        style: Theme.of(context).textTheme.displaySmall,
+                      ),
+                      trailing: IconButton(
+                          onPressed: _handleStaredMail,
+                          icon: widget.mail.isStarred
+                              ? const Icon(
+                            Icons.star,
+                            color: AppTheme.yellowColor,
+                          )
+                              : const Icon(Icons.star_border_outlined)),
                     ),
-                    if (widget.mail.to?.isNotEmpty ?? false)
-                      ListTile(
-                          leading: const Text("To"),
-                          title: Text(_listToText(widget.mail.to!))),
-                    if (widget.mail.cc?.isNotEmpty ?? false)
-                      ListTile(
-                          leading: const Text("Cc"),
-                          title: Text(_listToText(widget.mail.cc!))),
                     ListTile(
-                        leading: const Text("Date"),
-                        title: Text(DateFormat('h:mm a, dd MMMM, yyyy')
-                            .format(widget.mail.sentDate!))),
-                  ],
-                ),
-              ),
-            SizedBox(
-              height: 600,
-              child: SingleChildScrollView(
-                child: Column(children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Container(
-                      height: 400,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: Theme.of(context).primaryColor,
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      child: QuillEditor.basic(
-                        focusNode: FocusNode(canRequestFocus: false),
-                        controller: _bodyController,
-                        configurations: QuillEditorConfigurations(
-                          showCursor: false,
-                          // keyboardAppearance: Theme.of(context).brightness,
-                          placeholder: "Body",
-                          checkBoxReadOnly: true,
-                          enableInteractiveSelection: false,
-                          onLaunchUrl: (url) async {
-                            await launchUrl(
-                              Uri.parse(url),
-                              mode: LaunchMode.externalApplication,
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (widget.mail.replies?.isNotEmpty ?? false)
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Container(
-                        height: 400,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        child: ListView.separated(
-                          separatorBuilder: (context, index) => const Divider(thickness: 2, color: Colors.black, endIndent: 100, indent: 100,),
-                          itemCount: controllers.length,
-                          itemBuilder: (context, index) {
-                            final controller = controllers[index];
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 16.0),
-                              child: Container(
-                                height: 580,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                  color: Theme.of(context).primaryColor,
-                                ),
-                                padding: const EdgeInsets.all(8),
-                                child: QuillEditor.basic(
-                                  focusNode: FocusNode(canRequestFocus: false),
-                                  controller: controller,
-                                  configurations: QuillEditorConfigurations(
-                                    showCursor: false,
-                                    placeholder: "Body",
-                                    checkBoxReadOnly: true,
-                                    enableInteractiveSelection: false,
-                                    onLaunchUrl: (url) async {
-                                      await launchUrl(
-                                        Uri.parse(url),
-                                        mode: LaunchMode.externalApplication,
-                                      );
-                                    },
-                                  ),
-                                ),
+                      leading: CircleAvatar(
+                        backgroundColor: AppTheme.blueColor,
+                        child: CachedNetworkImage(
+                          imageUrl: widget.sender.imageUrl!,
+                          imageBuilder: (context, imageProvider) => Container(
+                            decoration: BoxDecoration(
+                              border: const GradientBoxBorder(
+                                gradient: LinearGradient(colors: [
+                                  AppTheme.redColor,
+                                  AppTheme.greenColor,
+                                  AppTheme.yellowColor,
+                                  AppTheme.blueColor
+                                ]),
                               ),
-                            );
-                          },
+                              shape: BoxShape.circle,
+                              image: DecorationImage(image: imageProvider),
+                            ),
+                          ),
+                          placeholder: (context, url) => Lottie.asset(
+                            'assets/lottiefiles/circle_loading.json',
+                            fit: BoxFit.fill,
+                          ),
+                          errorWidget: (context, url, error) =>
+                          const Icon(Icons.error),
+                        ),
+                      ),
+                      title: Text(widget.sender.name!),
+                      subtitle: Row(
+                        children: [
+                          Text(
+                            _handleToCcBcc(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                isShow = !isShow;
+                              });
+                            },
+                            child: Icon(isShow
+                                ? Icons.keyboard_arrow_up
+                                : Icons.keyboard_arrow_down),
+                          )
+                        ],
+                      ),
+                    ),
+                    if (isShow)
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30),
+                          color: Theme.of(context).primaryColor,
+                          border: const Border(
+                            bottom: BorderSide(color: Colors.black),
+                            right: BorderSide(color: Colors.black),
+                            top: BorderSide(color: Colors.black),
+                            left: BorderSide(color: Colors.black),
+                          ),
+                        ),
+                        margin: const EdgeInsets.symmetric(horizontal: 16.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: ListView(
+                          shrinkWrap: true,
+                          children: [
+                            ListTile(
+                              leading: const Text("From"),
+                              title: Text(widget.mail.from!),
+                            ),
+                            if (widget.mail.to?.isNotEmpty ?? false)
+                              ListTile(
+                                  leading: const Text("To"),
+                                  title: Text(_listToText(widget.mail.to!))),
+                            if (widget.mail.cc?.isNotEmpty ?? false)
+                              ListTile(
+                                  leading: const Text("Cc"),
+                                  title: Text(_listToText(widget.mail.cc!))),
+                            ListTile(
+                                leading: const Text("Date"),
+                                title: Text(DateFormat('h:mm a, dd MMMM, yyyy')
+                                    .format(widget.mail.sentDate!))),
+                          ],
+                        ),
+                      ),
+
+                    Flexible(
+                      flex: 5,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Container(
+                          height: 600,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: Theme.of(context).primaryColor,
+                          ),
+                          padding: const EdgeInsets.all(8),
+                          child: QuillEditor.basic(
+                            focusNode: FocusNode(canRequestFocus: false),
+                            controller: _bodyController,
+                            configurations: QuillEditorConfigurations(
+                              showCursor: false,
+                              // keyboardAppearance: Theme.of(context).brightness,
+                              placeholder: "Body",
+                              checkBoxReadOnly: true,
+                              enableInteractiveSelection: false,
+                              onLaunchUrl: (url) async {
+                                await launchUrl(
+                                  Uri.parse(url),
+                                  mode: LaunchMode.externalApplication,
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                ]),
-              ),
-            ),
-            if (widget.mail.attachments?.isNotEmpty ?? false)
-              Expanded(
-                  flex: 1,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: widget.mail.attachments!.map((attachment) {
-                          return GestureDetector(
-                            onTap: () => _openFile(attachment),
-                            child: SingleChildScrollView(
-                              child: SizedBox(
-                                height: 100,
-                                width: 100,
-                                child: Card(
-                                  elevation: 5.0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        10.0), // Rounded corners
+                    if (widget.mail.replies?.isNotEmpty ?? false)
+
+                    Flexible(
+                      flex: 5,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Container(
+                          height: 400,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: Theme.of(context).primaryColor,
+                          ),
+                          child: ListView.separated(
+                            separatorBuilder: (context, index) => const Divider(thickness: 2, color: Colors.black, endIndent: 100, indent: 100,),
+                            itemCount: controllers.length,
+                            itemBuilder: (context, index) {
+                              final controller = controllers[index];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                                child: Container(
+                                  // height: 580,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    color: Theme.of(context).primaryColor,
                                   ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Column(
-                                      children: [
-                                        Image.asset(
-                                          "assets/images/${attachment.extension}.png",
-                                          height: 42,
-                                          errorBuilder:
-                                              (context, error, stackTrace) =>
-                                                  Image.asset(
-                                            "assets/images/unknown.png",
-                                            height: 42,
-                                          ),
-                                        ), // // Attachment icon
-                                        Text(
-                                          attachment.fileName!,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.bold),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        Text(fileService
-                                            .formatFileSize(attachment.size!)),
-                                      ],
+                                  padding: const EdgeInsets.all(8),
+                                  child: QuillEditor.basic(
+                                    focusNode: FocusNode(canRequestFocus: false),
+                                    controller: controller,
+                                    configurations: QuillEditorConfigurations(
+                                      showCursor: false,
+                                      placeholder: "Body",
+                                      checkBoxReadOnly: true,
+                                      enableInteractiveSelection: false,
+                                      onLaunchUrl: (url) async {
+                                        await launchUrl(
+                                          Uri.parse(url),
+                                          mode: LaunchMode.externalApplication,
+                                        );
+                                      },
                                     ),
                                   ),
                                 ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     ),
-                  )),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: SizedBox(
-                height: 50,
-                child: Row(
-                  children: [
-                    Expanded(
-                        child: Padding(
-                      padding:
-                          const EdgeInsets.only(left: 8, right: 8, bottom: 16),
-                      child: ElevatedButton(
-                          onPressed: _handleReply,
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [Icon(Icons.turn_left), Text("Reply")],
-                          )),
-                    )),
-                    if (widget.mail.cc?.isNotEmpty ?? false)
+
+                    if (widget.mail.attachments?.isNotEmpty ?? false)
                       Expanded(
+                          flex: 1,
                           child: Padding(
-                        padding:
-                            const EdgeInsets.only(left: 8, right: 8, bottom: 16),
-                        child: ElevatedButton(
-                            onPressed: _handleReplyAll,
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.reply_all),
-                                Text("Reply all")
-                              ],
-                            )),
-                      )),
-                    Expanded(
-                        child: Padding(
-                      padding:
-                          const EdgeInsets.only(left: 8, right: 8, bottom: 16),
-                      child: ElevatedButton(
-                          onPressed: _handleForward,
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [Icon(Icons.turn_right), Text("Forward")],
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: widget.mail.attachments!.map((attachment) {
+                                  return GestureDetector(
+                                    onTap: () => _openFile(attachment),
+                                    child: SingleChildScrollView(
+                                      child: SizedBox(
+                                        height: 100,
+                                        width: 100,
+                                        child: Card(
+                                          elevation: 5.0,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                                10.0), // Rounded corners
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Column(
+                                              children: [
+                                                Image.asset(
+                                                  "assets/images/${attachment.extension}.png",
+                                                  height: 42,
+                                                  errorBuilder:
+                                                      (context, error, stackTrace) =>
+                                                      Image.asset(
+                                                        "assets/images/unknown.png",
+                                                        height: 42,
+                                                      ),
+                                                ), // // Attachment icon
+                                                Text(
+                                                  attachment.fileName!,
+                                                  style: const TextStyle(
+                                                      fontWeight: FontWeight.bold),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                Text(fileService
+                                                    .formatFileSize(attachment.size!)),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
                           )),
-                    )),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      child: SizedBox(
+                        height: 50,
+                        child: Row(
+                          children: [
+                            Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 8, right: 8, bottom: 16),
+                                  child: ElevatedButton(
+                                      onPressed: _handleReply,
+                                      child: const Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [Icon(Icons.turn_left), Text("Reply")],
+                                      )),
+                                )),
+                            if (widget.mail.cc?.isNotEmpty ?? false)
+                              Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(
+                                        left: 8, right: 8, bottom: 16),
+                                    child: ElevatedButton(
+                                        onPressed: _handleReplyAll,
+                                        child: const Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.reply_all),
+                                            Text("Reply all")
+                                          ],
+                                        )),
+                                  )),
+                            Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 8, right: 8, bottom: 16),
+                                  child: ElevatedButton(
+                                      onPressed: _handleForward,
+                                      child: const Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.turn_right),
+                                          Text("Forward")
+                                        ],
+                                      )),
+                                )),
+                          ],
+                        ),
+                      ),
+                    )
                   ],
                 ),
               ),
-            )
-          ],
-        ),
+            ),
+          );
+        },
       ),
     );
   }

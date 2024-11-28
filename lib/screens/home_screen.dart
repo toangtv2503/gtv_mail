@@ -1,12 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app_badge_control/flutter_app_badge_control.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:gtv_mail/components/list_mail_component.dart';
 import 'package:gtv_mail/models/user.dart';
+import 'package:gtv_mail/utils/image_default.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,59 +27,55 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late String email = '';
   late SharedPreferences prefs;
   late int currentIndex = 2;
   late String currentCategoryName = "Primary";
+  late MyUser? user = MyUser();
 
   void init() async {
     prefs = await SharedPreferences.getInstance();
-    MyUser? user = await userService.getLoggedUser();
-    if (user != null) {
-      setState(() {
-        email = user.email!;
+    user = await userService.getLoggedUser();
+    if (!kIsWeb) {
+      await notificationService.updateBadge();
+
+      final docRef = FirebaseFirestore.instance.collection("users").doc(user!.uid);
+
+      docRef.snapshots().listen(
+            (event) async {
+          setState(() {});
+          await notificationService.updateBadge();
+        },
+        onError: (error) => print("Listen failed: $error"),
+      );
+
+      FirebaseFirestore.instance
+          .collection("mails")
+          .where('to', arrayContains: user!.email)
+          .snapshots()
+          .listen((querySnapshot) async {
+        for (var change in querySnapshot.docChanges) {
+          if (change.type == DocumentChangeType.added) {
+            var data = change.doc.data();
+            if (data == null) continue;
+
+            var newMail = Mail.fromJson(data);
+
+            DateTime sentDate = newMail.sentDate!;
+
+            if (sentDate.isBefore(DateTime.now().subtract(const Duration(minutes: 1)))) {
+              continue;
+            }
+
+            if (newMail.isDraft) continue;
+
+
+            NotificationService.showInstantNotification(newMail.from!, newMail.subject!);
+            await notificationService.updateBadge();
+
+          }
+        }
       });
     }
-
-    await notificationService.updateBadge();
-
-    final id = FirebaseAuth.instance.currentUser!.uid;
-    final docRef = FirebaseFirestore.instance.collection("users").doc(id);
-
-    docRef.snapshots().listen(
-      (event) async {
-        setState(() {});
-        await notificationService.updateBadge();
-      },
-      onError: (error) => print("Listen failed: $error"),
-    );
-
-    FirebaseFirestore.instance
-        .collection("mails")
-        .where('to', arrayContains: email)
-        .snapshots()
-        .listen((querySnapshot) async {
-      for (var change in querySnapshot.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          var data = change.doc.data();
-          if (data == null) continue;
-
-          var newMail = Mail.fromJson(data);
-
-          DateTime sentDate = newMail.sentDate!;
-
-          if (sentDate.isBefore(DateTime.now().subtract(const Duration(seconds: 30)))) {
-            continue;
-          }
-
-          if (newMail.isDraft) continue;
-          if (!(newMail.to?.contains(email) ?? false)) continue;
-
-          NotificationService.showInstantNotification(newMail.from!, newMail.subject!);
-          await notificationService.updateBadge();
-        }
-      }
-    });
   }
 
   @override
@@ -106,13 +104,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleSignOut() async{
-    await FlutterAppBadgeControl.updateBadgeCount(0);
+    if(!kIsWeb) {
+      await FlutterAppBadgeControl.updateBadgeCount(0);
+    }
     await FirebaseAuth.instance.signOut();
   }
 
   void _handleOpenProfile() async {
-    User? user = userService.getCurrentUser();
-    context.pushNamed('profile', pathParameters: {'id': user!.uid});
+    MyUser? user = await userService.getLoggedUser();
+    if (user != null) {
+      context.pushNamed('profile', pathParameters: {'id': user.uid!});
+    }
   }
 
   void _handleDrawerMenu(int index, Map<String, dynamic> option) async {
@@ -164,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
               currentAccountPicture: CircleAvatar(
                 backgroundColor: AppTheme.blueColor,
                 child: CachedNetworkImage(
-                  imageUrl: userService.getCurrentUser()!.photoURL!,
+                  imageUrl: user?.imageUrl ?? DEFAULT_AVATAR,
                   imageBuilder: (context, imageProvider) => Container(
                     decoration: BoxDecoration(
                       border: const GradientBoxBorder(
@@ -186,8 +188,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   errorWidget: (context, url, error) => const Icon(Icons.error),
                 ),
               ),
-              accountName: Text(userService.getCurrentUser()!.displayName!),
-              accountEmail: Text(email),
+              accountName: Text(user?.name ?? "FullName"),
+              accountEmail: Text(user?.email ?? "Email"),
             ),
             _buildEmailCategoriesMenu(),
             ListTile(
@@ -218,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: CircleAvatar(
                       backgroundColor: AppTheme.blueColor,
                       child: CachedNetworkImage(
-                        imageUrl: userService.getCurrentUser()!.photoURL!,
+                        imageUrl: user?.imageUrl ?? DEFAULT_AVATAR,
                         imageBuilder: (context, imageProvider) => Container(
                           decoration: BoxDecoration(
                             border: const GradientBoxBorder(
@@ -283,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           ListMailComponent(
             category: currentCategoryName,
-            userEmail: email,
+            userEmail: user?.email ?? "Email"
           )
         ],
       ),
