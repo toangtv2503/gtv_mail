@@ -1,3 +1,4 @@
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,7 +8,9 @@ import 'package:flutter_app_badge_control/flutter_app_badge_control.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:gtv_mail/components/list_mail_component.dart';
+import 'package:gtv_mail/models/answer_template.dart';
 import 'package:gtv_mail/models/user.dart';
+import 'package:gtv_mail/services/template_service.dart';
 import 'package:gtv_mail/utils/image_default.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,51 +34,65 @@ class _HomeScreenState extends State<HomeScreen> {
   late int currentIndex = 2;
   late String currentCategoryName = "Primary";
   late MyUser? user = MyUser();
+  late bool isAutoReply = false;
 
   void init() async {
     prefs = await SharedPreferences.getInstance();
+
     user = await userService.getLoggedUser();
     if (!kIsWeb) {
       await notificationService.updateBadge();
+    }
+    final docRef =
+        FirebaseFirestore.instance.collection("users").doc(user!.uid);
 
-      final docRef = FirebaseFirestore.instance.collection("users").doc(user!.uid);
+    docRef.snapshots().listen(
+      (event) async {
+        setState(() {});
+      },
+      onError: (error) => print("Listen failed: $error"),
+    );
 
-      docRef.snapshots().listen(
-            (event) async {
-          setState(() {});
-          await notificationService.updateBadge();
-        },
-        onError: (error) => print("Listen failed: $error"),
-      );
+    FirebaseFirestore.instance
+        .collection("mails")
+        .where('to', arrayContains: user!.email)
+        .snapshots()
+        .listen((querySnapshot) async {
+      for (var change in querySnapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          var data = change.doc.data();
+          if (data == null) continue;
 
-      FirebaseFirestore.instance
-          .collection("mails")
-          .where('to', arrayContains: user!.email)
-          .snapshots()
-          .listen((querySnapshot) async {
-        for (var change in querySnapshot.docChanges) {
-          if (change.type == DocumentChangeType.added) {
-            var data = change.doc.data();
-            if (data == null) continue;
+          var newMail = Mail.fromJson(data);
 
-            var newMail = Mail.fromJson(data);
+          DateTime sentDate = newMail.sentDate!;
 
-            DateTime sentDate = newMail.sentDate!;
+          if (sentDate
+              .isBefore(DateTime.now().subtract(const Duration(minutes: 1)))) {
+            continue;
+          }
 
-            if (sentDate.isBefore(DateTime.now().subtract(const Duration(minutes: 1)))) {
-              continue;
+          if (newMail.isDraft) continue;
+
+          if (!kIsWeb) {
+            NotificationService.showInstantNotification(
+                newMail.from!, newMail.subject!);
+            await notificationService.updateBadge();
+          }
+
+          isAutoReply = prefs.getBool('auto_answer_mode') ?? false;
+          if (isAutoReply) {
+            AnswerTemplate? template = await templateService.getTemplateByEmail(user!.email!);
+            if (template != null) {
+              await mailService.sendAutoAnswerMail(template, newMail.from!);
             }
 
-            if (newMail.isDraft) continue;
-
-
-            NotificationService.showInstantNotification(newMail.from!, newMail.subject!);
-            await notificationService.updateBadge();
-
           }
+
         }
-      });
-    }
+      }
+    });
+
     setState(() {});
   }
 
@@ -90,22 +107,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   _handleComposeMail() async {
-    var result = await context.pushNamed('compose', queryParameters: {'type': 'new'});
+    var result =
+        await context.pushNamed('compose', queryParameters: {'type': 'new'});
 
     if (result.runtimeType == Mail) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Draft saved'),
           duration: const Duration(seconds: 3),
-          action: SnackBarAction(label: 'Discard', onPressed: () => _handleDiscardDraft(result as Mail)),
+          action: SnackBarAction(
+              label: 'Discard',
+              onPressed: () => _handleDiscardDraft(result as Mail)),
         ),
       );
-
     }
   }
 
-  void _handleSignOut() async{
-    if(!kIsWeb) {
+  void _handleSignOut() async {
+    if (!kIsWeb) {
       await FlutterAppBadgeControl.updateBadgeCount(0);
     }
     await FirebaseAuth.instance.signOut();
@@ -131,6 +150,24 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       currentCategoryName = option['title'];
     });
+  }
+
+  void _handleHardDelete() async {
+    final result = await showOkCancelAlertDialog(
+        context: context,
+        message:
+            'You are about to permanently delete all these emails. Do you want to continue?',
+        cancelLabel: "Cancel");
+
+    if (result.name == "ok") {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Emptying the trash...'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+      await mailService.deleteAllMail(user!.email!);
+    }
   }
 
   Widget _buildEmailCategoriesMenu() {
@@ -284,10 +321,25 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          if (currentCategoryName == 'Trash')
+            SliverToBoxAdapter(
+              child: ListTile(
+                leading: const Icon(Icons.delete_forever),
+                title: const Text(
+                    "Items in the trash for more than 30 days will be automatically deleted."),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextButton(
+                      onPressed: _handleHardDelete,
+                      child: const Text("Empty the trash now."),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ListMailComponent(
-            category: currentCategoryName,
-            userEmail: user?.email ?? "Email"
-          )
+              category: currentCategoryName, userEmail: user?.email ?? "Email")
         ],
       ),
       floatingActionButton: FloatingActionButton(

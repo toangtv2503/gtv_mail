@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gtv_mail/screens/auto_answer_mail.dart';
 import 'package:gtv_mail/screens/compose_mail.dart';
 import 'package:gtv_mail/screens/detail_mail.dart';
 import 'package:gtv_mail/screens/recover_password_screen.dart';
@@ -108,6 +109,14 @@ final GoRouter appRouter = GoRouter(
               path: '/setting',
               builder: (BuildContext context, GoRouterState state) {
                 return const SettingScreen();
+              }),
+          GoRoute(
+              name: 'auto-answer-mail',
+              path: '/auto-answer-mail/:id',
+              builder: (BuildContext context, GoRouterState state) {
+                return AutoAnswerMail(
+                  userId: state.pathParameters['id']!,
+                );
               }),
         ]),
   ],

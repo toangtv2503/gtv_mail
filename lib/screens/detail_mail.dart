@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
+import 'package:gtv_mail/models/attachment.dart';
 import 'package:gtv_mail/models/user.dart';
 import 'package:gtv_mail/services/file_service.dart';
 import 'package:gtv_mail/services/mail_service.dart';
@@ -23,6 +24,7 @@ import '../utils/app_theme.dart';
 class DetailMail extends StatefulWidget {
   DetailMail(
       {super.key, required this.id, required this.mail, required this.sender});
+
   String id;
   Mail mail;
   MyUser sender;
@@ -33,6 +35,7 @@ class DetailMail extends StatefulWidget {
 
 class _DetailMailState extends State<DetailMail> {
   bool isShow = false;
+  Map<String, bool> loadingState = {};
   final QuillController _bodyController = QuillController.basic();
 
   @override
@@ -46,7 +49,9 @@ class _DetailMailState extends State<DetailMail> {
     mail.isRead = true;
     await mailService.updateMail(mail);
     await notificationService.updateBadge();
-    _bodyController.document = widget.mail.body!;
+    var empty = Document();
+    empty.insert(0, "  ");
+    _bodyController.document = (widget.mail.body!.isEmpty()) ? empty : widget.mail.body!;
     loadReplies();
   }
 
@@ -78,10 +83,24 @@ class _DetailMailState extends State<DetailMail> {
 
   void _handleDelete() async {
     Mail mail = await mailService.getMailById(widget.id);
-    mail.isDelete = true;
-    await mailService.updateMail(mail).then(
-          (_) => Navigator.pop(context, mail),
-        );
+    if (mail.isDelete) {
+      final result = await showOkCancelAlertDialog(
+          context: context,
+          message:
+              'You are about to permanently delete this mail. Do you want to continue?',
+          cancelLabel: "Cancel");
+
+      if (result.name == "ok") {
+        await mailService.deleteMail(mail).then(
+              (_) => Navigator.pop(context, true),
+            );
+      }
+    } else {
+      mail.isDelete = true;
+      await mailService.updateMail(mail).then(
+            (_) => Navigator.pop(context, mail),
+          );
+    }
   }
 
   String _handleToCcBcc() {
@@ -113,31 +132,44 @@ class _DetailMailState extends State<DetailMail> {
         queryParameters: {'type': 'forward'}, extra: {'id': widget.id});
   }
 
-  void _openFile(attachment) async {
-    if (attachment.url != null) {
-      final uri = Uri.parse(attachment.url!);
-      final response = await http.get(uri);
+  Future<void> _openFile(Attachment attachment) async {
+    setState(() {
+      loadingState[attachment.fileName!] = true;
+    });
 
-      print(attachment.toJson());
+    try {
+      if (attachment.url != null) {
+        final uri = Uri.parse(attachment.url!);
+        final response = await http.get(uri);
 
-      if (response.statusCode == 200) {
-        final tempDir = await getTemporaryDirectory();
-        final tempFilePath = '${tempDir.path}/${attachment.fileName}';
+        if (response.statusCode == 200) {
+          final tempDir = await getTemporaryDirectory();
+          final tempFilePath = '${tempDir.path}/${attachment.fileName}';
 
-        final file = File(tempFilePath);
-        await file.writeAsBytes(response.bodyBytes);
+          final file = File(tempFilePath);
+          await file.writeAsBytes(response.bodyBytes);
 
-        final result = await OpenFile.open(tempFilePath);
+          final result = await OpenFile.open(tempFilePath);
 
-        // Handle errors
-        if (result.type != ResultType.done) {
-          showOkAlertDialog(
-            context: context,
-            title: "Error",
-            message: "Could not open the file.",
-          );
+          if (result.type != ResultType.done) {
+            showOkAlertDialog(
+              context: context,
+              title: "Error",
+              message: "Could not open the file.",
+            );
+          }
         }
       }
+    } catch (e) {
+      showOkAlertDialog(
+        context: context,
+        title: "Error",
+        message: "An error occurred while opening the file.",
+      );
+    } finally {
+      setState(() {
+        loadingState[attachment.fileName!] = false;
+      });
     }
   }
 
@@ -184,9 +216,9 @@ class _DetailMailState extends State<DetailMail> {
                           onPressed: _handleStaredMail,
                           icon: widget.mail.isStarred
                               ? const Icon(
-                            Icons.star,
-                            color: AppTheme.yellowColor,
-                          )
+                                  Icons.star,
+                                  color: AppTheme.yellowColor,
+                                )
                               : const Icon(Icons.star_border_outlined)),
                     ),
                     ListTile(
@@ -213,7 +245,7 @@ class _DetailMailState extends State<DetailMail> {
                             fit: BoxFit.fill,
                           ),
                           errorWidget: (context, url, error) =>
-                          const Icon(Icons.error),
+                              const Icon(Icons.error),
                         ),
                       ),
                       title: Text(widget.sender.name!),
@@ -273,7 +305,6 @@ class _DetailMailState extends State<DetailMail> {
                           ],
                         ),
                       ),
-
                     Flexible(
                       flex: 5,
                       child: Padding(
@@ -290,8 +321,7 @@ class _DetailMailState extends State<DetailMail> {
                             controller: _bodyController,
                             configurations: QuillEditorConfigurations(
                               showCursor: false,
-                              // keyboardAppearance: Theme.of(context).brightness,
-                              placeholder: "Body",
+                              placeholder: "Loading content...",
                               checkBoxReadOnly: true,
                               enableInteractiveSelection: false,
                               onLaunchUrl: (url) async {
@@ -306,55 +336,62 @@ class _DetailMailState extends State<DetailMail> {
                       ),
                     ),
                     if (widget.mail.replies?.isNotEmpty ?? false)
-
-                    Flexible(
-                      flex: 5,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Container(
-                          height: 400,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: Theme.of(context).primaryColor,
-                          ),
-                          child: ListView.separated(
-                            separatorBuilder: (context, index) => const Divider(thickness: 2, color: Colors.black, endIndent: 100, indent: 100,),
-                            itemCount: controllers.length,
-                            itemBuilder: (context, index) {
-                              final controller = controllers[index];
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                                child: Container(
-                                  // height: 580,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(10),
-                                    color: Theme.of(context).primaryColor,
-                                  ),
-                                  padding: const EdgeInsets.all(8),
-                                  child: QuillEditor.basic(
-                                    focusNode: FocusNode(canRequestFocus: false),
-                                    controller: controller,
-                                    configurations: QuillEditorConfigurations(
-                                      showCursor: false,
-                                      placeholder: "Body",
-                                      checkBoxReadOnly: true,
-                                      enableInteractiveSelection: false,
-                                      onLaunchUrl: (url) async {
-                                        await launchUrl(
-                                          Uri.parse(url),
-                                          mode: LaunchMode.externalApplication,
-                                        );
-                                      },
+                      Flexible(
+                        flex: 5,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Container(
+                            height: 400,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            child: ListView.separated(
+                              separatorBuilder: (context, index) =>
+                                  const Divider(
+                                thickness: 2,
+                                color: Colors.black,
+                                endIndent: 100,
+                                indent: 100,
+                              ),
+                              itemCount: controllers.length,
+                              itemBuilder: (context, index) {
+                                final controller = controllers[index];
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16.0),
+                                  child: Container(
+                                    // height: 580,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                                    padding: const EdgeInsets.all(8),
+                                    child: QuillEditor.basic(
+                                      focusNode:
+                                          FocusNode(canRequestFocus: false),
+                                      controller: controller,
+                                      configurations: QuillEditorConfigurations(
+                                        showCursor: false,
+                                        placeholder: "Body",
+                                        checkBoxReadOnly: true,
+                                        enableInteractiveSelection: false,
+                                        onLaunchUrl: (url) async {
+                                          await launchUrl(
+                                            Uri.parse(url),
+                                            mode:
+                                                LaunchMode.externalApplication,
+                                          );
+                                        },
+                                      ),
                                     ),
                                   ),
-                                ),
-                              );
-                            },
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ),
-                    ),
-
                     if (widget.mail.attachments?.isNotEmpty ?? false)
                       Expanded(
                           flex: 1,
@@ -363,7 +400,8 @@ class _DetailMailState extends State<DetailMail> {
                             child: SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               child: Row(
-                                children: widget.mail.attachments!.map((attachment) {
+                                children:
+                                    widget.mail.attachments!.map((attachment) {
                                   return GestureDetector(
                                     onTap: () => _openFile(attachment),
                                     child: SingleChildScrollView(
@@ -373,31 +411,44 @@ class _DetailMailState extends State<DetailMail> {
                                         child: Card(
                                           elevation: 5.0,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                                10.0), // Rounded corners
+                                            borderRadius:
+                                                BorderRadius.circular(10.0),
                                           ),
                                           child: Padding(
                                             padding: const EdgeInsets.all(8.0),
                                             child: Column(
                                               children: [
-                                                Image.asset(
-                                                  "assets/images/${attachment.extension}.png",
-                                                  height: 42,
-                                                  errorBuilder:
-                                                      (context, error, stackTrace) =>
-                                                      Image.asset(
-                                                        "assets/images/unknown.png",
-                                                        height: 42,
-                                                      ),
-                                                ), // // Attachment icon
+                                                if (loadingState[
+                                                        attachment.fileName!] ==
+                                                    true)
+                                                  SizedBox(
+                                                      width: 42,
+                                                      child: Lottie.asset(
+                                                        'assets/lottiefiles/circle_loading.json',
+                                                        fit: BoxFit.fill,
+                                                      ))
+                                                else
+                                                  Image.asset(
+                                                    "assets/images/${attachment.extension}.png",
+                                                    height: 42,
+                                                    errorBuilder: (context,
+                                                            error,
+                                                            stackTrace) =>
+                                                        Image.asset(
+                                                      "assets/images/unknown.png",
+                                                      height: 42,
+                                                    ),
+                                                  ),
                                                 Text(
                                                   attachment.fileName!,
                                                   style: const TextStyle(
-                                                      fontWeight: FontWeight.bold),
-                                                  overflow: TextOverflow.ellipsis,
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
-                                                Text(fileService
-                                                    .formatFileSize(attachment.size!)),
+                                                Text(fileService.formatFileSize(
+                                                    attachment.size!)),
                                               ],
                                             ),
                                           ),
@@ -409,53 +460,57 @@ class _DetailMailState extends State<DetailMail> {
                               ),
                             ),
                           )),
-
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 8),
                       child: SizedBox(
                         height: 50,
                         child: Row(
                           children: [
                             Expanded(
                                 child: Padding(
-                                  padding: const EdgeInsets.only(
-                                      left: 8, right: 8, bottom: 16),
-                                  child: ElevatedButton(
-                                      onPressed: _handleReply,
-                                      child: const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [Icon(Icons.turn_left), Text("Reply")],
-                                      )),
-                                )),
+                              padding: const EdgeInsets.only(
+                                  left: 8, right: 8, bottom: 16),
+                              child: ElevatedButton(
+                                  onPressed: _handleReply,
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.turn_left),
+                                      Text("Reply")
+                                    ],
+                                  )),
+                            )),
                             if (widget.mail.cc?.isNotEmpty ?? false)
                               Expanded(
                                   child: Padding(
-                                    padding: const EdgeInsets.only(
-                                        left: 8, right: 8, bottom: 16),
-                                    child: ElevatedButton(
-                                        onPressed: _handleReplyAll,
-                                        child: const Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(Icons.reply_all),
-                                            Text("Reply all")
-                                          ],
-                                        )),
-                                  )),
+                                padding: const EdgeInsets.only(
+                                    left: 8, right: 8, bottom: 16),
+                                child: ElevatedButton(
+                                    onPressed: _handleReplyAll,
+                                    child: const Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.reply_all),
+                                        Text("Reply all")
+                                      ],
+                                    )),
+                              )),
                             Expanded(
                                 child: Padding(
-                                  padding: const EdgeInsets.only(
-                                      left: 8, right: 8, bottom: 16),
-                                  child: ElevatedButton(
-                                      onPressed: _handleForward,
-                                      child: const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.turn_right),
-                                          Text("Forward")
-                                        ],
-                                      )),
-                                )),
+                              padding: const EdgeInsets.only(
+                                  left: 8, right: 8, bottom: 16),
+                              child: ElevatedButton(
+                                  onPressed: _handleForward,
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.turn_right),
+                                      Text("Forward")
+                                    ],
+                                  )),
+                            )),
                           ],
                         ),
                       ),

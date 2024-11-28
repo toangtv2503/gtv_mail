@@ -6,11 +6,15 @@ import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:gtv_mail/components/list_mail_component.dart';
 import 'package:gtv_mail/utils/app_fonts.dart';
 import 'package:notification_permissions/notification_permissions.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/user.dart';
+import '../services/user_service.dart';
 import '../utils/app_theme.dart';
 
 class SettingScreen extends StatefulWidget {
@@ -40,6 +44,7 @@ class _SettingScreenState extends State<SettingScreen>
       } else {
         isTurnOnNotification = status == PermissionStatus.granted;
       }
+      isAutoAnswer = prefs.getBool('auto_answer_mode') ?? false;
 
       // theme
       currentSettingTheme = prefs.getString('setting_theme') ?? 'Default';
@@ -97,6 +102,7 @@ class _SettingScreenState extends State<SettingScreen>
 
   // general
   bool isTurnOnNotification = false;
+  bool isAutoAnswer = false;
 
   // theme
   DevicePlatform selectedSettingTheme = DevicePlatform.device;
@@ -114,12 +120,21 @@ class _SettingScreenState extends State<SettingScreen>
   //display
   String currentDisplayMode = "Default";
 
+  void _handleNavigateToAutoAnswerTemplate(BuildContext context) async{
+    MyUser? user = await userService.getLoggedUser();
+    if (user != null) {
+      context.pushNamed('auto-answer-mail', pathParameters: {'id': user.uid!});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
+        centerTitle: true,
+        title: const Text("Settings"),
       ),
       body: SettingsList(
         applicationType: ApplicationType.both,
@@ -149,6 +164,24 @@ class _SettingScreenState extends State<SettingScreen>
                   AppSettings.openAppSettings(
                       type: AppSettingsType.notification);
                 },
+              ),
+              SettingsTile.switchTile(
+                leading: const Icon(Icons.auto_mode),
+                title: const Text('Auto Answer'),
+                initialValue: isAutoAnswer,
+                onToggle: (value) async {
+                  prefs.setBool('auto_answer_mode', value);
+                  setState(() {
+                    isAutoAnswer = value;
+                  });
+                },
+              ),
+              SettingsTile.navigation(
+                leading: const Icon(Icons.description),
+                title: const Text("Auto Answer Template"),
+                enabled: isAutoAnswer,
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onPressed: _handleNavigateToAutoAnswerTemplate,
               ),
             ],
           ),
@@ -385,25 +418,31 @@ class _SettingScreenState extends State<SettingScreen>
                   if (result != null) {
                     switch (result) {
                       case 'Lite':
-                        prefs.setString('default_display_mode', jsonEncode({
-                          'mode': 'Lite',
-                          'isShowAvatar': false,
-                          'isShowAttachment': false,
-                        }));
+                        prefs.setString(
+                            'default_display_mode',
+                            jsonEncode({
+                              'mode': 'Lite',
+                              'isShowAvatar': false,
+                              'isShowAttachment': false,
+                            }));
                         break;
                       case 'Basic':
-                        prefs.setString('default_display_mode', jsonEncode({
-                          'mode': 'Basic',
-                          'isShowAvatar': true,
-                          'isShowAttachment': false,
-                        }));
+                        prefs.setString(
+                            'default_display_mode',
+                            jsonEncode({
+                              'mode': 'Basic',
+                              'isShowAvatar': true,
+                              'isShowAttachment': false,
+                            }));
                         break;
                       case 'Detailed':
-                        prefs.setString('default_display_mode', jsonEncode({
-                          'mode': 'Detailed',
-                          'isShowAvatar': true,
-                          'isShowAttachment': true,
-                        }));
+                        prefs.setString(
+                            'default_display_mode',
+                            jsonEncode({
+                              'mode': 'Detailed',
+                              'isShowAvatar': true,
+                              'isShowAttachment': true,
+                            }));
                         break;
                     }
                     setState(() {

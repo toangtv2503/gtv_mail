@@ -55,13 +55,15 @@ class _ComposeMailState extends State<ComposeMail> {
   bool isShowMore = false;
   List<Attachment> attachments = [];
   List<PlatformFile> fileCached = [];
-
+  late bool isEmptyContent = true;
   late Mail? mail;
+  Map<String, bool> loadingState = {};
+  bool isSaving = false;
 
   void init() async {
     prefs = await SharedPreferences.getInstance();
     MyUser? user = await userService.getLoggedUser();
-    if(user != null) {
+    if (user != null) {
       setState(() {
         _fromController.text = user.email!;
         _defaultFontSize = prefs.getString('default_font_size') ?? "Normal";
@@ -73,31 +75,38 @@ class _ComposeMailState extends State<ComposeMail> {
   }
 
   void loadContent() async {
-    print("isDraft ${widget.isDraft}, isReply ${widget.isReply}, isForward ${widget.isForward}, isNew ${widget.id == null}, id: ${widget.id}");
-    if(widget.id?.isNotEmpty ?? false) {
+    print(
+        "isDraft ${widget.isDraft}, isReply ${widget.isReply}, isForward ${widget.isForward}, isNew ${widget.id == null}, id: ${widget.id}");
+    if (widget.id?.isNotEmpty ?? false) {
       mail = await mailService.getMailById(widget.id!);
+
+      if(mail!.body!.isEmpty()) {
+        isEmptyContent = false;
+      }
 
       if (widget.isDraft ?? false) {
         _subjectController.text = mail!.subject ?? 'Draft';
-        _bodyController.document = mail!.body!;
+        _bodyController.document = (mail!.body!.isEmpty()) ? Document() : mail!.body!;
         if (mail!.attachments?.isNotEmpty ?? false) {
           attachments = mail!.attachments!;
         }
       } else if (widget.isReply ?? false) {
         _subjectController.text = 'Re: ${mail!.subject ?? ''}';
-        _bodyController.document = mail!.body!;
-        _bodyController.document.insert(0,
+        _bodyController.document = (mail!.body!.isEmpty()) ? Document() : mail!.body!;
+        _bodyController.document.insert(
+          0,
           "At: ${DateFormat('E, dd MMM yyyy \'at\' hh:mm a').format(mail!.sentDate!)}\n"
           "${mail!.from} wrote: \n",
         );
       } else if (widget.isForward ?? false) {
         _subjectController.text = 'Fwd: ${mail!.subject ?? ''}';
-        _bodyController.document = mail!.body!;
-        _bodyController.document.insert(0,
-            "------Mail had been forward------\n"
-            "From: ${mail!.from}\n"
-            "Date: ${DateFormat('E, dd MMM yyyy \'at\' hh:mm a').format(mail!.sentDate!)}\n"
-            "To: ${mail!.to!.first}\n\n",
+        _bodyController.document = (mail!.body!.isEmpty()) ? Document() : mail!.body!;
+        _bodyController.document.insert(
+          0,
+          "------Mail had been forward------\n"
+          "From: ${mail!.from}\n"
+          "Date: ${DateFormat('E, dd MMM yyyy \'at\' hh:mm a').format(mail!.sentDate!)}\n"
+          "To: ${mail!.to!.first}\n\n",
         );
         if (mail!.attachments?.isNotEmpty ?? false) {
           attachments = mail!.attachments!;
@@ -131,19 +140,36 @@ class _ComposeMailState extends State<ComposeMail> {
     }
   }
 
-  void _openFile(Attachment attachment) async {
-    if (widget.isDraft ?? false) {
-      final uri = Uri.parse(attachment.url!);
-      final response = await http.get(uri);
+  Future<void> _openFile(Attachment attachment) async {
+    setState(() {
+      loadingState[attachment.fileName!] = true;
+    });
 
-      if (response.statusCode == 200) {
-        final tempDir = await getTemporaryDirectory();
-        final tempFilePath = '${tempDir.path}/${attachment.fileName}';
+    try {
+      if (widget.isDraft ?? false) {
+        final uri = Uri.parse(attachment.url!);
+        final response = await http.get(uri);
 
-        final file = File(tempFilePath);
-        await file.writeAsBytes(response.bodyBytes);
+        if (response.statusCode == 200) {
+          final tempDir = await getTemporaryDirectory();
+          final tempFilePath = '${tempDir.path}/${attachment.fileName}';
 
-        final result = await OpenFile.open(tempFilePath);
+          final file = File(tempFilePath);
+          await file.writeAsBytes(response.bodyBytes);
+
+          final result = await OpenFile.open(tempFilePath);
+
+          if (result.type != ResultType.done) {
+            showOkAlertDialog(
+              context: context,
+              title: "Error",
+              message: "Could not open the file.",
+            );
+          }
+        }
+      } else if (attachment.url != null) {
+        final filePath = attachment.url!;
+        final result = await OpenFile.open(filePath);
 
         if (result.type != ResultType.done) {
           showOkAlertDialog(
@@ -153,19 +179,16 @@ class _ComposeMailState extends State<ComposeMail> {
           );
         }
       }
-    }
-    else if (attachment.url != null) {
-      final filePath = attachment.url!;
-      final result = await OpenFile.open(filePath);
-
-      if (result.type != ResultType.done) {
-        showOkAlertDialog(
-          context: context,
-          title: "Error",
-          message: "Could not open the file.",
-        );
-      }
-
+    } catch (e) {
+      showOkAlertDialog(
+        context: context,
+        title: "Error",
+        message: "An error occurred while opening the file.",
+      );
+    } finally {
+      setState(() {
+        loadingState[attachment.fileName!] = false;
+      });
     }
   }
 
@@ -240,8 +263,8 @@ class _ComposeMailState extends State<ComposeMail> {
         attachments: sendAttachments.isNotEmpty ? sendAttachments : null,
       );
 
-      if(widget.id?.isNotEmpty ?? false) {
-        if(widget.isReply ?? false) {
+      if (widget.id?.isNotEmpty ?? false) {
+        if (widget.isReply ?? false) {
           newMail.isReplyMail = true;
           mail = await mailService.getMailById(widget.id!);
           if (mail!.replies?.isEmpty ?? true) {
@@ -260,6 +283,16 @@ class _ComposeMailState extends State<ComposeMail> {
   }
 
   void _saveDraft() async {
+    setState(() {
+      isSaving = true;
+    });
+
+    const snackBar = SnackBar(
+      content: Text('Draft is saving...'),
+      duration: Duration(days: 1),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
     _key.currentState?.save();
 
     List<String> toEmails =
@@ -290,7 +323,12 @@ class _ComposeMailState extends State<ComposeMail> {
     );
 
     _subject = _subject?.trim() ?? '';
-    if ((_subject?.isEmpty ?? false) && toEmails.isEmpty && ccEmails.isEmpty && bccEmails.isEmpty && _bodyController.document.isEmpty() && sendAttachments.isEmpty) {
+    if ((_subject?.isEmpty ?? false) &&
+        toEmails.isEmpty &&
+        ccEmails.isEmpty &&
+        bccEmails.isEmpty &&
+        _bodyController.document.isEmpty() &&
+        sendAttachments.isEmpty) {
       Navigator.pop(context);
       return;
     }
@@ -298,6 +336,12 @@ class _ComposeMailState extends State<ComposeMail> {
     if (_subject?.isEmpty ?? true) draft.subject = "Draft";
 
     await mailService.sendEmail(draft);
+
+    setState(() {
+      isSaving = false;
+    });
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
     Navigator.pop(context, draft);
   }
 
@@ -334,7 +378,7 @@ class _ComposeMailState extends State<ComposeMail> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-            onPressed:  () {
+            onPressed: () {
               if (widget.id?.isEmpty ?? true) {
                 _saveDraft();
               } else {
@@ -977,14 +1021,15 @@ class _ComposeMailState extends State<ComposeMail> {
                 controller: _bodyController,
                 configurations: QuillSimpleToolbarConfigurations(
                     buttonOptions: QuillSimpleToolbarButtonOptions(
-                        fontSize: QuillToolbarFontSizeButtonOptions(rawItemsMap: const {
-                          'Small': '8',
-                          'Normal': '14',
-                          'Medium': '24.5',
-                          'Large': '46',
-                          'Huge': '64',
-                          'Clear': '0',
-                        },
+                        fontSize: QuillToolbarFontSizeButtonOptions(
+                          rawItemsMap: const {
+                            'Small': '8',
+                            'Normal': '14',
+                            'Medium': '24.5',
+                            'Large': '46',
+                            'Huge': '64',
+                            'Clear': '0',
+                          },
                           initialValue: _defaultFontSize ?? 'Normal',
                           onSelected: (value) => setState(() {
                             _defaultFontSize = value;
@@ -1020,18 +1065,24 @@ class _ComposeMailState extends State<ComposeMail> {
                       configurations: QuillEditorConfigurations(
                         showCursor: true,
                         keyboardAppearance: Theme.of(context).brightness,
-                        placeholder: "Body",
+                        placeholder: (widget.id != null && isEmptyContent) ? "Loading content..." : "Body",
                         customStyles: DefaultStyles(
                           paragraph: DefaultTextBlockStyle(
                             TextStyle(
+                              color: Theme.of(context)
+                                  .primaryTextTheme
+                                  .bodyMedium!
+                                  .color,
                               fontSize: {
-                                'Small': 8,
-                                'Normal': 14,
-                                'Medium': 24.5,
-                                'Large': 46,
-                                'Huge': 64,
-                                'Clear': 0,
-                              }[_defaultFontSize]?.toDouble() ?? 14.0,
+                                    'Small': 8,
+                                    'Normal': 14,
+                                    'Medium': 24.5,
+                                    'Large': 46,
+                                    'Huge': 64,
+                                    'Clear': 0,
+                                  }[_defaultFontSize]
+                                      ?.toDouble() ??
+                                  14.0,
                               fontFamily: _defaultFontFamily,
                             ),
                             const HorizontalSpacing(0.0, 0.0),
@@ -1069,16 +1120,23 @@ class _ComposeMailState extends State<ComposeMail> {
                                       padding: const EdgeInsets.all(8.0),
                                       child: Column(
                                         children: [
-                                          Image.asset(
-                                            "assets/images/${attachment.extension}.png",
-                                            height: 42,
-                                            errorBuilder:
-                                                (context, error, stackTrace) =>
-                                                    Image.asset(
-                                              "assets/images/unknown.png",
+                                          if (loadingState[attachment.fileName!] == true)
+                                            SizedBox(
+                                                width: 42,
+                                                child: Lottie.asset(
+                                                  'assets/lottiefiles/circle_loading.json',
+                                                  fit: BoxFit.fill,
+                                                ))
+                                          else
+                                            Image.asset(
+                                              "assets/images/${attachment.extension}.png",
                                               height: 42,
-                                            ),
-                                          ), // Attachment icon
+                                              errorBuilder: (context, error, stackTrace) =>
+                                                  Image.asset(
+                                                    "assets/images/unknown.png",
+                                                    height: 42,
+                                                  ),
+                                            ), // At// tachment iAttachm
                                           Text(
                                             attachment.fileName!,
                                             style: const TextStyle(

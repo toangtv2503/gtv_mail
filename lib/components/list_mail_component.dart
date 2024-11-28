@@ -30,8 +30,7 @@ class ListMailComponent extends StatefulWidget {
   State<ListMailComponent> createState() => _ListMailComponentState();
 }
 
-class _ListMailComponentState extends State<ListMailComponent>
-    with SingleTickerProviderStateMixin {
+class _ListMailComponentState extends State<ListMailComponent> with SingleTickerProviderStateMixin {
   late final controller = SlidableController(this);
   late SharedPreferences prefs;
   late Map<String, dynamic> displayMode = {
@@ -137,7 +136,15 @@ class _ListMailComponentState extends State<ListMailComponent>
                 onPressed: () => _handleUndoDelete(result as Mail)),
           ),
         );
+      } else if (result == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('1 item has been deleted.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
+      setState(() {});
     }
   }
 
@@ -173,6 +180,8 @@ class _ListMailComponentState extends State<ListMailComponent>
         return mailService.getAllMails(userEmail);
       case 'Spam':
         return mailService.getSpamMails(userEmail);
+      case 'Trash':
+        return mailService.getDeleteMails(userEmail);
       default:
         return Stream.value([]);
     }
