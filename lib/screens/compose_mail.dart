@@ -283,16 +283,6 @@ class _ComposeMailState extends State<ComposeMail> {
   }
 
   void _saveDraft() async {
-    setState(() {
-      isSaving = true;
-    });
-
-    const snackBar = SnackBar(
-      content: Text('Draft is saving...'),
-      duration: Duration(days: 1),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
     _key.currentState?.save();
 
     List<String> toEmails =
@@ -332,6 +322,16 @@ class _ComposeMailState extends State<ComposeMail> {
       Navigator.pop(context);
       return;
     }
+
+    setState(() {
+      isSaving = true;
+    });
+
+    const snackBar = SnackBar(
+      content: Text('Draft is saving...'),
+      duration: Duration(days: 1),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
     if (_subject?.isEmpty ?? true) draft.subject = "Draft";
 

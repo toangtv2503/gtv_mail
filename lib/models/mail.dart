@@ -100,4 +100,14 @@ class Mail {
       isReplyMail: json['isReplyMail'] ?? false,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Mail && uid != null && uid == other.uid;
+  }
+
+  @override
+  int get hashCode => uid?.hashCode ?? super.hashCode;
 }

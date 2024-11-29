@@ -10,10 +10,13 @@ import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:gtv_mail/components/list_mail_component.dart';
 import 'package:gtv_mail/models/answer_template.dart';
 import 'package:gtv_mail/models/user.dart';
+import 'package:gtv_mail/models/user_label.dart';
+import 'package:gtv_mail/services/label_service.dart';
 import 'package:gtv_mail/services/template_service.dart';
 import 'package:gtv_mail/utils/image_default.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/mail.dart';
 import '../services/mail_service.dart';
@@ -35,11 +38,18 @@ class _HomeScreenState extends State<HomeScreen> {
   late String currentCategoryName = "Primary";
   late MyUser? user = MyUser();
   late bool isAutoReply = false;
+  late UserLabel? userLabel = UserLabel(id: "", mail: "");
+  List<Widget> labelWidgets = [];
 
   void init() async {
     prefs = await SharedPreferences.getInstance();
-
     user = await userService.getLoggedUser();
+    userLabel = await labelService.getLabels(user!.email!);
+    loadLabels().then((widgets) {
+      setState(() {
+        labelWidgets = widgets;
+      });
+    });
     if (!kIsWeb) {
       await notificationService.updateBadge();
     }
@@ -82,18 +92,51 @@ class _HomeScreenState extends State<HomeScreen> {
 
           isAutoReply = prefs.getBool('auto_answer_mode') ?? false;
           if (isAutoReply) {
-            AnswerTemplate? template = await templateService.getTemplateByEmail(user!.email!);
+            AnswerTemplate? template =
+                await templateService.getTemplateByEmail(user!.email!);
             if (template != null) {
               await mailService.sendAutoAnswerMail(template, newMail.from!);
             }
-
           }
-
         }
       }
     });
 
+    FirebaseFirestore.instance
+        .collection("labels")
+        .where('mail', isEqualTo: user!.email)
+        .snapshots()
+        .listen((querySnapshot) async {
+          userLabel = await labelService.getLabels(user!.email!);
+          await _loadLabels();
+    });
+
     setState(() {});
+  }
+
+  Future<void> _loadLabels() async {
+    final labels = await loadLabels();
+    setState(() {
+      labelWidgets = labels;
+    });
+  }
+
+  Future<List<Widget>> loadLabels() async {
+    if (userLabel != null) {
+      if (userLabel!.labels?.isNotEmpty ?? false) {
+        return userLabel!.labels!
+            .map(
+              (label) => ListTile(
+                leading: const Icon(Icons.label_important_outline_rounded),
+                title: Text(label),
+                onTap: () => _handleOpenLabel(label),
+                onLongPress: () => _handleActionLabel(label),
+              ),
+            )
+            .toList();
+      }
+    }
+    return [];
   }
 
   @override
@@ -106,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await mailService.deleteMail(draft);
   }
 
-  _handleComposeMail() async {
+  void _handleComposeMail() async {
     var result =
         await context.pushNamed('compose', queryParameters: {'type': 'new'});
 
@@ -127,6 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!kIsWeb) {
       await FlutterAppBadgeControl.updateBadgeCount(0);
     }
+
     await FirebaseAuth.instance.signOut();
   }
 
@@ -138,10 +182,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleDrawerMenu(int index, Map<String, dynamic> option) async {
-    if (option['title'] == "Settings") {
-      context.pushNamed('setting');
-      return;
-    }
     setState(() {
       currentIndex = index;
     });
@@ -150,6 +190,10 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       currentCategoryName = option['title'];
     });
+  }
+
+  void _handleSetting() async {
+    context.pushNamed('setting');
   }
 
   void _handleHardDelete() async {
@@ -170,6 +214,124 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _handleOpenLabel(label) async {
+    setState(() {
+      currentCategoryName = label;
+    });
+  }
+
+  void _handleCreateLabel() async {
+    final result = await showTextInputDialog(
+      context: context,
+      textFields: [
+        DialogTextField(
+            hintText: 'Enter your label name',
+            validator: (value) {
+              if (value?.isEmpty ?? true) {
+                return "Please enter your label name";
+              }
+              return null;
+            }),
+      ],
+      title: 'Create new label',
+    );
+
+    if (result != null) {
+      String newLabel = result.first;
+      if (await labelService.isExistLabel(user!.email!, newLabel)) {
+        final result = await showOkAlertDialog(
+          context: context,
+          title: 'Error',
+          message: 'Your label is existed',
+        );
+      } else {
+        if (userLabel == null) {
+          String id = const Uuid().v4();
+          UserLabel newUserLabel =
+              UserLabel(id: id, mail: user!.email!, labels: [newLabel]);
+          await labelService.addLabel(newUserLabel);
+          userLabel = await labelService.getLabels(user!.email!);
+        } else {
+          if (userLabel!.labels?.isEmpty ?? true) {
+            userLabel!.labels = [newLabel];
+          } else {
+            userLabel!.labels!.add(newLabel);
+          }
+          await labelService.updateLabel(userLabel!);
+        }
+
+        _loadLabels();
+      }
+    }
+  }
+
+  void _handleEditLabel(String label) async {
+    final result = await showTextInputDialog(
+      context: context,
+      textFields: [
+        DialogTextField(
+            initialText: label,
+            hintText: 'Enter your label name',
+            validator: (value) {
+              if (value?.isEmpty ?? true) {
+                return "Please enter your label name";
+              }
+              return null;
+            }),
+      ],
+      title: 'Update label',
+    );
+
+    if (result != null) {
+      if (label != result.first) {
+        await labelService.editLabelName(user!.email!, label, result.first);
+        userLabel = await labelService.getLabels(user!.email!);
+        await _loadLabels();
+      }
+    }
+  }
+
+  void _handleActionLabel(String label) async {
+    final result = await showModalActionSheet<String>(
+      context: context,
+      title: 'Update/Delete Label',
+      actions: [
+        const SheetAction(
+          icon: Icons.edit,
+          label: 'Update',
+          key: 'Update',
+        ),
+        const SheetAction(
+          icon: Icons.delete_forever,
+          label: 'Delete',
+          key: 'Delete',
+        ),
+      ],
+    );
+
+    if (result == 'Delete') {
+      _handleDeleteLabel(label);
+    } else if (result == 'Update') {
+      _handleEditLabel(label);
+    }
+  }
+
+  void _handleDeleteLabel(String label) async {
+    final result = await showOkCancelAlertDialog(
+      context: context,
+      title: 'Confirm',
+      message: "Do you want to delete $label label?",
+    );
+
+    if (result.name == 'ok') {
+      userLabel!.labels!.remove(label);
+      await labelService.updateLabel(userLabel!);
+      await labelService.removeLabel(user!.email!, label);
+      userLabel = await labelService.getLabels(user!.email!);
+      await _loadLabels();
+    }
+  }
+
   Widget _buildEmailCategoriesMenu() {
     return Column(
       children: emailCategoriesMenu
@@ -178,7 +340,9 @@ class _HomeScreenState extends State<HomeScreen> {
             return MapEntry(
               index,
               option.containsKey('divider')
-                  ? const Divider()
+                  ? const Divider(
+                      thickness: 1,
+                    )
                   : ListTile(
                       selected: currentIndex == index,
                       style: ListTileStyle.drawer,
@@ -230,6 +394,20 @@ class _HomeScreenState extends State<HomeScreen> {
               accountEmail: Text(user?.email ?? "Email"),
             ),
             _buildEmailCategoriesMenu(),
+            ListTile(
+              leading: const Icon(Icons.add),
+              title: const Text("Create new"),
+              onTap: _handleCreateLabel,
+            ),
+            ...labelWidgets,
+            const Divider(
+              thickness: 1,
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text("Settings"),
+              onTap: _handleSetting,
+            ),
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text("Logout"),
@@ -339,7 +517,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ListMailComponent(
-              category: currentCategoryName, userEmail: user?.email ?? "Email")
+              category: currentCategoryName, userEmail: user?.email ?? "Email", userLabel: userLabel)
         ],
       ),
       floatingActionButton: FloatingActionButton(

@@ -16,9 +16,13 @@ import 'package:lottie/lottie.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/mail.dart';
+import '../models/user_label.dart';
+import '../services/label_service.dart';
 import '../services/notification_service.dart';
+import '../services/user_service.dart';
 import '../utils/app_theme.dart';
 
 class DetailMail extends StatefulWidget {
@@ -37,6 +41,8 @@ class _DetailMailState extends State<DetailMail> {
   bool isShow = false;
   Map<String, bool> loadingState = {};
   final QuillController _bodyController = QuillController.basic();
+  late UserLabel? userLabel = UserLabel(id: "", mail: "");
+  late MyUser? user = MyUser();
 
   @override
   void initState() {
@@ -45,13 +51,16 @@ class _DetailMailState extends State<DetailMail> {
   }
 
   void init() async {
+    user = await userService.getLoggedUser();
+    userLabel = await labelService.getLabels(user!.email!);
     Mail mail = await mailService.getMailById(widget.id);
     mail.isRead = true;
     await mailService.updateMail(mail);
     await notificationService.updateBadge();
     var empty = Document();
     empty.insert(0, "  ");
-    _bodyController.document = (widget.mail.body!.isEmpty()) ? empty : widget.mail.body!;
+    _bodyController.document =
+        (widget.mail.body!.isEmpty()) ? empty : widget.mail.body!;
     loadReplies();
   }
 
@@ -180,6 +189,107 @@ class _DetailMailState extends State<DetailMail> {
     setState(() {});
   }
 
+  void _handleCreateLabel() async {
+    final result = await showTextInputDialog(
+      context: context,
+      textFields: [
+        DialogTextField(
+            hintText: 'Enter your label name',
+            validator: (value) {
+              if (value?.isEmpty ?? true) {
+                return "Please enter your label name";
+              }
+              return null;
+            }),
+      ],
+      title: 'Create new label',
+    );
+
+    if (result != null) {
+      String newLabel = result.first;
+      if (await labelService.isExistLabel(user!.email!, newLabel)) {
+        final result = await showOkAlertDialog(
+          context: context,
+          title: 'Error',
+          message: 'Your label is existed',
+        );
+      } else {
+        if (userLabel == null) {
+          String id = const Uuid().v4();
+          UserLabel newUserLabel =
+          UserLabel(id: id, mail: user!.email!, labels: [newLabel]);
+          await labelService.addLabel(newUserLabel);
+          userLabel = await labelService.getLabels(user!.email!);
+        } else {
+          if (userLabel!.labels?.isEmpty ?? true) {
+            userLabel!.labels = [newLabel];
+          } else {
+            userLabel!.labels!.add(newLabel);
+          }
+          await labelService.updateLabel(userLabel!);
+        }
+
+        // _loadLabels();
+      }
+    }
+  }
+
+  void _handleOptionMenu() async {
+    if (userLabel != null) {
+      if (userLabel!.labels?.isEmpty ?? true) {
+        _handleCreateLabel();
+        return;
+      }
+    }
+
+    final result = await showMenu<String>(
+      context: context,
+      position: const RelativeRect.fromLTRB(50, 50, 0, 0),
+      items: userLabel!.labels!
+          .map(
+            (label) {
+          final isSelected = userLabel!.labelMail?[label]?.contains(widget.mail.uid) ?? false;
+          return PopupMenuItem<String>(
+            value: label,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(label),
+                if (isSelected) const Icon(Icons.check, color: Colors.green),
+              ],
+            ),
+          );
+        },
+      )
+          .toList(),
+      elevation: 8.0,
+    );
+
+    if (result != null) {
+      final isCurrentlyAssigned = userLabel!.labelMail?[result]?.contains(widget.mail.uid) ?? false;
+
+      try {
+        if (isCurrentlyAssigned) {
+          await labelService.removeLabelFromMail(user!.email!, result, widget.mail.uid!);
+          userLabel!.labelMail?[result]?.remove(widget.mail.uid);
+          if (userLabel!.labelMail?[result]?.isEmpty ?? false) {
+            userLabel!.labelMail?.remove(result);
+          }
+        } else {
+          await labelService.assignLabelToMail(user!.email!, result, widget.mail.uid!);
+          if (userLabel!.labelMail?.containsKey(result) == false) {
+            userLabel!.labelMail?[result] = [];
+          }
+          userLabel!.labelMail?[result]?.add(widget.mail.uid!);
+        }
+
+        setState(() {});
+      } catch (e) {
+        print('Error updating label: $e');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -194,7 +304,8 @@ class _DetailMailState extends State<DetailMail> {
               icon: const Icon(Icons.delete_outline_outlined)),
           IconButton(
               onPressed: _handleUnread, icon: const Icon(Icons.mail_outline)),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz))
+          IconButton(
+              onPressed: _handleOptionMenu, icon: const Icon(Icons.more_horiz))
         ],
       ),
       body: LayoutBuilder(
@@ -283,8 +394,7 @@ class _DetailMailState extends State<DetailMail> {
                         ),
                         margin: const EdgeInsets.symmetric(horizontal: 16.0),
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: ListView(
-                          shrinkWrap: true,
+                        child: Column(
                           children: [
                             ListTile(
                               leading: const Text("From"),
@@ -292,16 +402,21 @@ class _DetailMailState extends State<DetailMail> {
                             ),
                             if (widget.mail.to?.isNotEmpty ?? false)
                               ListTile(
-                                  leading: const Text("To"),
-                                  title: Text(_listToText(widget.mail.to!))),
+                                leading: const Text("To"),
+                                title: Text(_listToText(widget.mail.to!)),
+                              ),
                             if (widget.mail.cc?.isNotEmpty ?? false)
                               ListTile(
-                                  leading: const Text("Cc"),
-                                  title: Text(_listToText(widget.mail.cc!))),
+                                leading: const Text("Cc"),
+                                title: Text(_listToText(widget.mail.cc!)),
+                              ),
                             ListTile(
-                                leading: const Text("Date"),
-                                title: Text(DateFormat('h:mm a, dd MMMM, yyyy')
-                                    .format(widget.mail.sentDate!))),
+                              leading: const Text("Date"),
+                              title: Text(
+                                DateFormat('h:mm a, dd MMMM, yyyy')
+                                    .format(widget.mail.sentDate!),
+                              ),
+                            ),
                           ],
                         ),
                       ),

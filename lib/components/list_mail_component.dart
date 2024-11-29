@@ -10,21 +10,24 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gradient_borders/box_borders/gradient_box_border.dart';
 import 'package:gtv_mail/models/user.dart';
+import 'package:gtv_mail/services/label_service.dart';
 import 'package:gtv_mail/services/user_service.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/mail.dart';
+import '../models/user_label.dart';
 import '../services/mail_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/image_default.dart';
 
 class ListMailComponent extends StatefulWidget {
   ListMailComponent(
-      {super.key, required this.category, required this.userEmail});
+      {super.key, required this.category, required this.userEmail, this.userLabel});
   String category;
   String userEmail;
+  UserLabel? userLabel;
 
   @override
   State<ListMailComponent> createState() => _ListMailComponentState();
@@ -153,6 +156,13 @@ class _ListMailComponentState extends State<ListMailComponent> with SingleTicker
     await mailService.updateMail(mail);
   }
 
+  Stream<List<Mail>> streamMailByLabel(String userEmail, String label) {
+    if (widget.userLabel != null) {
+      return labelService.getMailByLabel(userEmail, label);
+    }
+    return Stream.value([]);
+  }
+
   Stream<List<Mail>> streamMailByCategory(String userEmail, String category) {
     switch (category) {
       case 'All inboxes':
@@ -183,7 +193,7 @@ class _ListMailComponentState extends State<ListMailComponent> with SingleTicker
       case 'Trash':
         return mailService.getDeleteMails(userEmail);
       default:
-        return Stream.value([]);
+        return streamMailByLabel(userEmail, category);
     }
   }
 

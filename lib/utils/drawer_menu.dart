@@ -60,25 +60,6 @@ final List<Map<String, dynamic>> emailCategoriesMenu = [
     'icon': const Icon(Icons.delete_outline),
   },
   {
-    'title': 'Create new',
-    'icon': const Icon(Icons.add),
-  },
-  {
-    'divider': const Divider()
-  },
-  {
-    'title': 'Settings',
-    'icon': const Icon(Icons.settings_outlined),
-  },
-  {
-    'title': 'Send feedback',
-    'icon': const Icon(Icons.feedback_outlined),
-  },
-  {
-    'title': 'Help',
-    'icon': const Icon(Icons.help_outline),
-  },
-  {
     'divider': const Divider()
   },
 ];
