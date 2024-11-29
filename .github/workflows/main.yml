@@ -45,7 +45,7 @@ jobs:
       # Web build
       - name: Build Web
         run: |
-          flutter build web
+          flutter build web --release --web-renderer canvaskit
           cd build/web
           zip -r web.zip .
         continue-on-error: true

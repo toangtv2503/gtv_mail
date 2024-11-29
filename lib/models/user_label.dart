@@ -27,7 +27,7 @@ class UserLabel {
               value.map((item) => item.toString()).toList(),
             );
           } else {
-            // If the value is not a list, fallback to an empty list
+
             return MapEntry(key, <String>[]);
           }
         },

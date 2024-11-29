@@ -107,8 +107,8 @@ class _HomeScreenState extends State<HomeScreen> {
         .where('mail', isEqualTo: user!.email)
         .snapshots()
         .listen((querySnapshot) async {
-          userLabel = await labelService.getLabels(user!.email!);
-          await _loadLabels();
+      userLabel = await labelService.getLabels(user!.email!);
+      await _loadLabels();
     });
 
     setState(() {});
@@ -127,6 +127,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return userLabel!.labels!
             .map(
               (label) => ListTile(
+                selected: currentCategoryName == label,
+                selectedColor: AppTheme.greenColor,
                 leading: const Icon(Icons.label_important_outline_rounded),
                 title: Text(label),
                 onTap: () => _handleOpenLabel(label),
@@ -182,14 +184,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleDrawerMenu(int index, Map<String, dynamic> option) async {
-    setState(() {
-      currentIndex = index;
-    });
+    currentIndex = index;
+    currentCategoryName = option['title'];
+    await _loadLabels();
+    setState(() {});
     Navigator.pop(context);
-
-    setState(() {
-      currentCategoryName = option['title'];
-    });
   }
 
   void _handleSetting() async {
@@ -215,9 +214,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleOpenLabel(label) async {
-    setState(() {
-      currentCategoryName = label;
-    });
+    currentIndex = -1;
+    currentCategoryName = label;
+    await _loadLabels();
+    setState(() {});
+    Navigator.pop(context);
   }
 
   void _handleCreateLabel() async {
@@ -517,7 +518,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ListMailComponent(
-              category: currentCategoryName, userEmail: user?.email ?? "Email", userLabel: userLabel)
+              category: currentCategoryName,
+              userEmail: user?.email ?? "Email",
+              userLabel: userLabel)
         ],
       ),
       floatingActionButton: FloatingActionButton(

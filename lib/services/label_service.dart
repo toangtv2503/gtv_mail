@@ -114,8 +114,7 @@ class LabelService {
     }
   }
 
-  Future<void> assignLabelToMail(
-      String email, String label, String mailId) async {
+  Future<void> assignLabelToMail(String email, String label, String mailId) async {
     try {
       var querySnapshot = await FirebaseFirestore.instance
           .collection("labels")
@@ -151,8 +150,7 @@ class LabelService {
     }
   }
 
-  Future<void> removeLabelFromMail(
-      String email, String label, String mailId) async {
+  Future<void> removeLabelFromMail(String email, String label, String mailId) async {
     try {
       var querySnapshot = await FirebaseFirestore.instance
           .collection("labels")
