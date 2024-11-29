@@ -297,8 +297,8 @@ class _DetailMailState extends State<DetailMail> {
         leading: IconButton(
             onPressed: _handleBack, icon: const Icon(Icons.arrow_back_ios)),
         actions: [
-          IconButton(
-              onPressed: () {}, icon: const Icon(Icons.archive_outlined)),
+          // IconButton(
+          //     onPressed: () {}, icon: const Icon(Icons.archive_outlined)),
           IconButton(
               onPressed: _handleDelete,
               icon: const Icon(Icons.delete_outline_outlined)),

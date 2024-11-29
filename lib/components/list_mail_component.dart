@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -24,7 +25,10 @@ import '../utils/image_default.dart';
 
 class ListMailComponent extends StatefulWidget {
   ListMailComponent(
-      {super.key, required this.category, required this.userEmail, this.userLabel});
+      {super.key,
+      required this.category,
+      required this.userEmail,
+      this.userLabel});
   String category;
   String userEmail;
   UserLabel? userLabel;
@@ -33,7 +37,8 @@ class ListMailComponent extends StatefulWidget {
   State<ListMailComponent> createState() => _ListMailComponentState();
 }
 
-class _ListMailComponentState extends State<ListMailComponent> with SingleTickerProviderStateMixin {
+class _ListMailComponentState extends State<ListMailComponent>
+    with SingleTickerProviderStateMixin {
   late final controller = SlidableController(this);
   late SharedPreferences prefs;
   late Map<String, dynamic> displayMode = {
@@ -72,23 +77,25 @@ class _ListMailComponentState extends State<ListMailComponent> with SingleTicker
       'isShowAvatar': true,
       'isShowAttachment': false,
     });
-    displayMode = jsonDecode(prefs.getString('default_display_mode') ?? defaultDisplayMode);
+    displayMode = jsonDecode(
+        prefs.getString('default_display_mode') ?? defaultDisplayMode);
     if (mounted) {
       setState(() {
         // Update state
       });
     }
-
   }
 
   void _listenDisplayModeChange() {
-    _displayModeListener = Timer.periodic(const Duration(seconds: 5), (_) async {
+    _displayModeListener =
+        Timer.periodic(const Duration(seconds: 5), (_) async {
       final defaultDisplayMode = jsonEncode({
         'mode': 'Basic',
         'isShowAvatar': true,
         'isShowAttachment': false,
       });
-      final newDisplayMode = jsonDecode(prefs.getString('default_display_mode') ?? defaultDisplayMode);
+      final newDisplayMode = jsonDecode(
+          prefs.getString('default_display_mode') ?? defaultDisplayMode);
 
       if (!mapEquals(newDisplayMode, displayMode)) {
         displayMode = newDisplayMode;
@@ -197,6 +204,61 @@ class _ListMailComponentState extends State<ListMailComponent> with SingleTicker
     }
   }
 
+  void _handleDelete(Mail mail) async {
+    if (mail.isDelete) {
+      final result = await showOkCancelAlertDialog(
+          context: context,
+          message:
+          'You are about to permanently delete this mail. Do you want to continue?',
+          cancelLabel: "Cancel");
+      if (result.name == "ok") {
+        await mailService.deleteMail(mail);
+      }
+    } else {
+      mail.isDelete = true;
+      await mailService.updateMail(mail);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('1 item has been moved to the trash.'),
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () => _handleUndoDelete(mail)),
+        ),
+      );
+    }
+  }
+
+  void _handleHide(Mail mail) async {
+    if (mail.isHidden) {
+      mail.isHidden = false;
+      await mailService.updateMail(mail);
+    } else {
+      mail.isHidden = true;
+      await mailService.updateMail(mail);
+    }
+  }
+
+  void _handleSpam(Mail mail) async {
+    if (mail.isSpam) {
+      mail.isSpam = false;
+      await mailService.updateMail(mail);
+    } else {
+      mail.isSpam = true;
+      await mailService.updateMail(mail);
+    }
+  }
+
+  void _handleImportant(Mail mail) async {
+    if (mail.isImportant) {
+      mail.isImportant = false;
+      await mailService.updateMail(mail);
+    } else {
+      mail.isImportant = true;
+      await mailService.updateMail(mail);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Mail>>(
@@ -255,37 +317,76 @@ class _ListMailComponentState extends State<ListMailComponent> with SingleTicker
                   children: [
                     Slidable(
                       key: ValueKey(index),
+                      endActionPane: ActionPane(
+                        motion: ScrollMotion(),
+                        extentRatio: 1,
+                        children: [
+                          SlidableAction(
+                            onPressed: (context) => _handleImportant(mails[index]),
+                            backgroundColor: AppTheme.blueColor,
+                            foregroundColor: Colors.white,
+                            icon: mails[index].isImportant ? Icons.undo : Icons.label_important_outline_rounded,
+                            label: mails[index].isImportant ? 'Un Important' : 'Important',
+                          ),
+                          SlidableAction(
+                            onPressed: (context) => _handleSpam(mails[index]),
+                            backgroundColor: AppTheme.yellowColor,
+                            foregroundColor: Colors.white,
+                            icon: mails[index].isSpam ? Icons.undo : Icons.warning,
+                            label: mails[index].isSpam ? 'Un Spam' : 'Spam',
+                          ),
+                          SlidableAction(
+                            onPressed: (context) => _handleHide(mails[index]),
+                            backgroundColor: AppTheme.greenColor,
+                            foregroundColor: Colors.white,
+                            icon: mails[index].isHidden ? Icons.undo :  Icons.access_time,
+                            label: mails[index].isHidden ? 'Re-Active' : 'Snoozed',
+                          ),
+                          SlidableAction(
+                            onPressed: (context) => _handleDelete(mails[index]),
+                            backgroundColor: AppTheme.redColor,
+                            foregroundColor: Colors.white,
+                            icon: Icons.delete,
+                            label: 'Delete',
+                          ),
+                        ],
+                      ),
                       child: ListTile(
                         style: ListTileStyle.list,
                         onTap: () => _handleDetailMail(
                             mails[index], userCache[mails[index].from]!),
-                        leading: displayMode['isShowAvatar'] ? CircleAvatar(
-                          backgroundColor: AppTheme.blueColor,
-                          child: CachedNetworkImage(
-                            imageUrl: userCache[mails[index].from]?.imageUrl! ??
-                                DEFAULT_AVATAR,
-                            imageBuilder: (context, imageProvider) => Container(
-                              decoration: BoxDecoration(
-                                border: const GradientBoxBorder(
-                                  gradient: LinearGradient(colors: [
-                                    AppTheme.redColor,
-                                    AppTheme.greenColor,
-                                    AppTheme.yellowColor,
-                                    AppTheme.blueColor
-                                  ]),
+                        leading: displayMode['isShowAvatar']
+                            ? CircleAvatar(
+                                backgroundColor: AppTheme.blueColor,
+                                child: CachedNetworkImage(
+                                  imageUrl:
+                                      userCache[mails[index].from]?.imageUrl! ??
+                                          DEFAULT_AVATAR,
+                                  imageBuilder: (context, imageProvider) =>
+                                      Container(
+                                    decoration: BoxDecoration(
+                                      border: const GradientBoxBorder(
+                                        gradient: LinearGradient(colors: [
+                                          AppTheme.redColor,
+                                          AppTheme.greenColor,
+                                          AppTheme.yellowColor,
+                                          AppTheme.blueColor
+                                        ]),
+                                      ),
+                                      shape: BoxShape.circle,
+                                      image:
+                                          DecorationImage(image: imageProvider),
+                                    ),
+                                  ),
+                                  placeholder: (context, url) => Lottie.asset(
+                                    'assets/lottiefiles/circle_loading.json',
+                                    fit: BoxFit.fill,
+                                  ),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
                                 ),
-                                shape: BoxShape.circle,
-                                image: DecorationImage(image: imageProvider),
-                              ),
-                            ),
-                            placeholder: (context, url) => Lottie.asset(
-                              'assets/lottiefiles/circle_loading.json',
-                              fit: BoxFit.fill,
-                            ),
-                            errorWidget: (context, url, error) =>
-                                const Icon(Icons.error),
-                          ),
-                        ) : null,
+                              )
+                            : null,
                         title: Text(
                           userCache[mails[index].from]?.name! ?? 'Sender',
                           style: (mails[index].isRead
@@ -320,44 +421,47 @@ class _ListMailComponentState extends State<ListMailComponent> with SingleTicker
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            if(displayMode['isShowAttachment']) SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: mails[index].attachments?.map((att) {
-                                      int colorIndex = mails[index]
-                                          .attachments!
-                                          .indexOf(att);
-                                      return Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 8),
-                                        child: Chip(
-                                          backgroundColor: [
-                                            AppTheme.redColor,
-                                            AppTheme.greenColor,
-                                            AppTheme.yellowColor,
-                                            AppTheme.blueColor
-                                          ][colorIndex % 4],
-                                          avatar: Image.asset(
-                                            "assets/images/${att.extension}.png",
-                                            height: 20,
-                                            errorBuilder:
-                                                (context, error, stackTrace) =>
-                                                    Image.asset(
-                                              "assets/images/unknown.png",
+                            if (displayMode['isShowAttachment'])
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: mails[index]
+                                          .attachments
+                                          ?.map((att) {
+                                        int colorIndex = mails[index]
+                                            .attachments!
+                                            .indexOf(att);
+                                        return Padding(
+                                          padding:
+                                              const EdgeInsets.only(right: 8),
+                                          child: Chip(
+                                            backgroundColor: [
+                                              AppTheme.redColor,
+                                              AppTheme.greenColor,
+                                              AppTheme.yellowColor,
+                                              AppTheme.blueColor
+                                            ][colorIndex % 4],
+                                            avatar: Image.asset(
+                                              "assets/images/${att.extension}.png",
                                               height: 20,
+                                              errorBuilder: (context, error,
+                                                      stackTrace) =>
+                                                  Image.asset(
+                                                "assets/images/unknown.png",
+                                                height: 20,
+                                              ),
+                                            ),
+                                            label: Text(att.extension!),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                           ),
-                                          label: Text(att.extension!),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                      );
-                                    }).toList() ??
-                                    [],
-                              ),
-                            )
+                                        );
+                                      }).toList() ??
+                                      [],
+                                ),
+                              )
                           ],
                         ),
                         trailing: SizedBox(

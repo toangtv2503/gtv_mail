@@ -129,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
               (label) => ListTile(
                 selected: currentCategoryName == label,
                 selectedColor: AppTheme.greenColor,
-                leading: const Icon(Icons.label_important_outline_rounded),
+                leading: const Icon(Icons.label),
                 title: Text(label),
                 onTap: () => _handleOpenLabel(label),
                 onLongPress: () => _handleActionLabel(label),
@@ -359,6 +359,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _handleSearch() async{
+    context.pushNamed('search', pathParameters: {'userMail': user!.email!});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -486,6 +490,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       hintText: "Search In Mail",
                     ),
                     maxLines: 1,
+                    onTap: _handleSearch,
+                    enabled: true,
+                    readOnly: true,
                   ),
                 ),
               ),
@@ -505,7 +512,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ListTile(
                 leading: const Icon(Icons.delete_forever),
                 title: const Text(
-                    "Items in the trash for more than 30 days will be automatically deleted."),
+                    "Items in the trash here can be permanent deleted."),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

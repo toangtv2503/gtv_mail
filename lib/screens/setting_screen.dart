@@ -134,7 +134,7 @@ class _SettingScreenState extends State<SettingScreen>
         elevation: 0,
         backgroundColor: Colors.transparent,
         centerTitle: true,
-        title: const Text("Settings"),
+        title: Text("Settings", style: Theme.of(context).textTheme.titleMedium,),
       ),
       body: SettingsList(
         applicationType: ApplicationType.both,

@@ -5,6 +5,7 @@ import 'package:gtv_mail/screens/auto_answer_mail.dart';
 import 'package:gtv_mail/screens/compose_mail.dart';
 import 'package:gtv_mail/screens/detail_mail.dart';
 import 'package:gtv_mail/screens/recover_password_screen.dart';
+import 'package:gtv_mail/screens/search_screen.dart';
 import 'package:gtv_mail/screens/setting_screen.dart';
 import 'package:gtv_mail/screens/user_profile_screen.dart';
 
@@ -116,6 +117,14 @@ final GoRouter appRouter = GoRouter(
               builder: (BuildContext context, GoRouterState state) {
                 return AutoAnswerMail(
                   userId: state.pathParameters['id']!,
+                );
+              }),
+          GoRoute(
+              name: 'search',
+              path: '/search/:userMail',
+              builder: (BuildContext context, GoRouterState state) {
+                return SearchScreen(
+                  userMail: state.pathParameters['userMail']!,
                 );
               }),
         ]),

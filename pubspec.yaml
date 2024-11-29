@@ -78,6 +78,10 @@ dependencies:
   flutter_app_badge_control: ^0.0.2
   flutter_local_notifications: ^18.0.1
   flutter_native_splash: ^2.4.3
+  dynamic_searchbar:
+    git:
+      url: https://github.com/phuongtoan521h0486/dynamic_searchbar.git
+      ref: main
 
 dev_dependencies:
   flutter_test:

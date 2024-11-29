@@ -139,6 +139,42 @@ class MailService {
     }
   }
 
+  Future<List<Mail>> getDataForSearch(String userEmail) async {
+    final toSnapshot = await FirebaseFirestore.instance
+        .collection("mails")
+        .where("to", arrayContains: userEmail)
+        .where('isDelete', isEqualTo: false)
+        .where('isHidden', isEqualTo: false)
+        .get();
+
+    final ccSnapshot = await FirebaseFirestore.instance
+        .collection("mails")
+        .where("cc", arrayContains: userEmail)
+        .where('isDelete', isEqualTo: false)
+        .where('isHidden', isEqualTo: false)
+        .get();
+
+    final bccSnapshot = await FirebaseFirestore.instance
+        .collection("mails")
+        .where("bcc", arrayContains: userEmail)
+        .where('isDelete', isEqualTo: false)
+        .where('isHidden', isEqualTo: false)
+        .get();
+
+    final List<QueryDocumentSnapshot> allDocuments = [
+      ...toSnapshot.docs,
+      ...ccSnapshot.docs,
+      ...bccSnapshot.docs,
+    ];
+
+    final mails = allDocuments.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return Mail.fromJson(data);
+    }).toList();
+
+    return mails;
+  }
+
   Stream<List<Mail>> getAllInboxes(String userEmail) {
     final toStream = FirebaseFirestore.instance
         .collection("mails")

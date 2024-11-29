@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
+import 'package:dynamic_searchbar/dynamic_searchbar.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +13,7 @@ import 'package:gtv_mail/utils/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/gestures.dart';
 
 
 import 'firebase_options.dart';
@@ -89,13 +91,44 @@ class _MyAppState extends State<MyApp> {
       light: AppTheme.lightTheme,
       dark: AppTheme.darkTheme,
       initial: widget.initialTheme,
-      builder: (theme, darkTheme) => MaterialApp.router(
-        title: "GTV Mail",
-        debugShowCheckedModeBanner: false,
-        theme: theme,
-        darkTheme: darkTheme,
-        routerConfig: appRouter,
+      builder: (theme, darkTheme) => GlobalSearchbar(
+        searchThemeData: SearchThemeData(
+          filterIcon: Icons.search,
+          title: 'Search',
+          filterTitle: 'Filters',
+          sortTitle: 'Sorts',
+          iconColor: AppTheme.greenColor,
+          applyButton: ActionButtonTheme(
+            title: 'Apply',
+            style: TextButton.styleFrom(fixedSize: const Size(110, 50)),
+          ),
+          clearFilterButton: ActionButtonTheme(
+            title: 'Clear',
+            style: TextButton.styleFrom(fixedSize: const Size(110, 50)),
+          ),
+          cancelButton: ActionButtonTheme(
+            title: 'Cancel',
+            style: TextButton.styleFrom(fixedSize: const Size(110, 50)),
+          ),
+        ),
+        child: MaterialApp.router(
+          title: "GTV Mail",
+          debugShowCheckedModeBanner: false,
+          scrollBehavior: NoThumbScrollBehavior().copyWith(scrollbars: false),
+          theme: theme,
+          darkTheme: darkTheme,
+          routerConfig: appRouter,
+        ),
       ),
     );
   }
+}
+
+class NoThumbScrollBehavior extends ScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.stylus,
+  };
 }
