@@ -46,6 +46,7 @@ jobs:
       - name: Build Web
         run: |
           flutter build web --release --web-renderer canvaskit
+          sed -i 's|<base href="/gtv_mail/">|<base href="/">|' build/web/index.html
           cd build/web
           zip -r web.zip .
         continue-on-error: true
