@@ -32,7 +32,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Flutter web
-        run: flutter build web --release --web-renderer canvaskit
+        run: flutter build web --release --web-renderer canvaskit --base-href "/gtv_mail/"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

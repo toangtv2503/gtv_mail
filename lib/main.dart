@@ -4,17 +4,16 @@ import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:dynamic_searchbar/dynamic_searchbar.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:gtv_mail/services/notification_service.dart';
 import 'package:gtv_mail/utils/app_routes.dart';
 import 'package:gtv_mail/utils/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/gestures.dart';
-
 
 import 'firebase_options.dart';
 

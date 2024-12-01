@@ -85,6 +85,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           user.name = _nameController.text;
           await userService.updateUser(user);
 
+          init();
+
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('All changes have been saved!'),
             backgroundColor: AppTheme.greenColor,
@@ -149,6 +151,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       user.password = BCrypt.hashpw(result.last, BCrypt.gensalt());
 
       await userService.updateUser(user);
+      init();
 
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
               content: Text('Password has been changed!'),
@@ -198,6 +201,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         user.imageUrl = newAvatarUrl;
 
         await userService.updateUser(user);
+        init();
 
         setState(() {
 

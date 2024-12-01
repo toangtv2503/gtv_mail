@@ -58,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     docRef.snapshots().listen(
       (event) async {
+        user = await userService.getLoggedUser();
         setState(() {});
       },
       onError: (error) => print("Listen failed: $error"),
@@ -192,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleSetting() async {
-    context.pushNamed('setting');
+    var result = await context.pushNamed('setting');
   }
 
   void _handleHardDelete() async {
@@ -487,7 +488,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: TextFormField(
                     decoration: const InputDecoration(
                       border: UnderlineInputBorder(),
-                      hintText: "Search In Mail",
+                      hintText: "Search Mail",
+                      suffixIcon: Icon(Icons.search),
                     ),
                     maxLines: 1,
                     onTap: _handleSearch,

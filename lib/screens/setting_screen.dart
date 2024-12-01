@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:math';
-import 'package:flutter/foundation.dart' show kIsWeb;
+
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:app_settings/app_settings.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:gtv_mail/components/list_mail_component.dart';
 import 'package:gtv_mail/utils/app_fonts.dart';
 import 'package:notification_permissions/notification_permissions.dart';
 import 'package:settings_ui/settings_ui.dart';
