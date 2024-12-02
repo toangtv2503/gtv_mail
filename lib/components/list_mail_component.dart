@@ -110,8 +110,7 @@ class _ListMailComponentState extends State<ListMailComponent>
   }
 
   void listenChange() {
-    final id = FirebaseAuth.instance.currentUser!.uid;
-    final docRef = FirebaseFirestore.instance.collection("users").doc(id);
+    final docRef = FirebaseFirestore.instance.collection("users");
     docRef.snapshots().listen(
       (event) {
         init();
