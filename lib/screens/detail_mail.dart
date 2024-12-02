@@ -232,17 +232,14 @@ class _DetailMailState extends State<DetailMail> {
           await labelService.updateLabel(userLabel!);
         }
 
-        // _loadLabels();
       }
     }
   }
 
   void _handleOptionMenu() async {
-    if (userLabel != null) {
-      if (userLabel!.labels?.isEmpty ?? true) {
-        _handleCreateLabel();
-        return;
-      }
+    if (userLabel == null || (userLabel!.labels?.isEmpty ?? true)) {
+      _handleCreateLabel();
+      return;
     }
 
     final result = await showMenu<String>(
