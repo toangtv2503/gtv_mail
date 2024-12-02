@@ -69,7 +69,7 @@ class _DetailMailState extends State<DetailMail> {
   void loadReplies() {
     if (widget.mail.replies?.isNotEmpty ?? false) {
       setState(() {
-        controllers = widget.mail.replies!.map((rep) {
+        controllers = widget.mail.replies!.where((mail) => mail.from == user!.email).map((rep) {
           var controller = QuillController.basic();
           controller.document = rep.body!;
           return controller;
@@ -134,7 +134,10 @@ class _DetailMailState extends State<DetailMail> {
         queryParameters: {'type': 'reply'}, extra: {'id': widget.id});
   }
 
-  void _handleReplyAll() {}
+  void _handleReplyAll() async{
+    var result = await context.pushNamed('compose',
+        queryParameters: {'type': 'reply'}, extra: {'id': widget.id});
+  }
 
   void _handleForward() async {
     var result = await context.pushNamed('compose',
@@ -450,7 +453,7 @@ class _DetailMailState extends State<DetailMail> {
                         ),
                       ),
                     ),
-                    if (widget.mail.replies?.isNotEmpty ?? false)
+                    if ((widget.mail.replies?.isNotEmpty ?? false) && controllers.isNotEmpty)
                       Flexible(
                         flex: 5,
                         child: Padding(
