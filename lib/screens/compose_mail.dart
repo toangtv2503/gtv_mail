@@ -309,16 +309,6 @@ class _ComposeMailState extends State<ComposeMail> {
     List<String> bccEmails =
         _bccEmailsController.getTags?.map((tag) => tag.tag).toList() ?? [];
 
-    setState(() {
-      isSaving = true;
-    });
-
-    const snackBar = SnackBar(
-      content: Text('Draft is saving...'),
-      duration: Duration(days: 1),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
     List<Attachment> sendAttachments = [];
     if (attachments.isNotEmpty) {
       sendAttachments = await fileService.mapFilesToAttachments(fileCached);
@@ -350,7 +340,15 @@ class _ComposeMailState extends State<ComposeMail> {
       return;
     }
 
+    setState(() {
+      isSaving = true;
+    });
 
+    const snackBar = SnackBar(
+      content: Text('Draft is saving...'),
+      duration: Duration(days: 1),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
     if (_subject?.isEmpty ?? true) draft.subject = "Draft";
 
