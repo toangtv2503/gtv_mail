@@ -96,7 +96,9 @@ class _HomeScreenState extends State<HomeScreen> {
             AnswerTemplate? template =
                 await templateService.getTemplateByEmail(user!.email!);
             if (template != null) {
-              await mailService.sendAutoAnswerMail(template, newMail.from!);
+              if (newMail.from != user!.email) {
+                await mailService.sendAutoAnswerMail(template, newMail.from!);
+              }
             }
           }
         }
