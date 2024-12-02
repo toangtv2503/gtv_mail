@@ -247,7 +247,11 @@ class _ComposeMailState extends State<ComposeMail> {
 
       List<Attachment> sendAttachments = [];
       if (attachments.isNotEmpty) {
-        sendAttachments = await fileService.mapFilesToAttachments(fileCached);
+        if (widget.id?.isEmpty ?? true ) {
+          sendAttachments = await fileService.mapFilesToAttachments(fileCached);
+        } else {
+          sendAttachments = attachments;
+        }
       }
 
       String uid = const Uuid().v8();
@@ -274,6 +278,19 @@ class _ComposeMailState extends State<ComposeMail> {
           }
           await mailService.updateMail(mail!);
         }
+        if (widget.isDraft ?? false) {
+          mail = await mailService.getMailById(widget.id!);
+          mail!.isDraft = false;
+          mail!.subject = newMail.subject!;
+          mail!.to = newMail.to;
+          mail!.cc = newMail.to;
+          mail!.bcc = newMail.to;
+          mail!.body = newMail.body;
+          mail!.attachments = newMail.attachments;
+          await mailService.updateMail(mail!);
+          Navigator.pop(context);
+          return;
+        }
       }
 
       await mailService.sendEmail(newMail);
@@ -291,6 +308,16 @@ class _ComposeMailState extends State<ComposeMail> {
         _ccEmailsController.getTags?.map((tag) => tag.tag).toList() ?? [];
     List<String> bccEmails =
         _bccEmailsController.getTags?.map((tag) => tag.tag).toList() ?? [];
+
+    setState(() {
+      isSaving = true;
+    });
+
+    const snackBar = SnackBar(
+      content: Text('Draft is saving...'),
+      duration: Duration(days: 1),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
     List<Attachment> sendAttachments = [];
     if (attachments.isNotEmpty) {
@@ -323,15 +350,7 @@ class _ComposeMailState extends State<ComposeMail> {
       return;
     }
 
-    setState(() {
-      isSaving = true;
-    });
 
-    const snackBar = SnackBar(
-      content: Text('Draft is saving...'),
-      duration: Duration(days: 1),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
     if (_subject?.isEmpty ?? true) draft.subject = "Draft";
 
