@@ -83,6 +83,6 @@ You can use the following release builds for each platform:
     - Or you can use the public URL: [https://toangtv2503.github.io/gtv_mail/](https://toangtv2503.github.io/gtv_mail/)
 
 ## Demo Video
-Watch the demo video to see the application in action: [Demo Video](https://youtu.be/examplelink)
+Watch the demo video to see the application in action: [Demo Video](https://youtu.be/TzKRfAwHRk4)
 
 ### Developed by GTV Team ❤
