@@ -48,6 +48,7 @@ You can log in to the application using the following pre-loaded accounts for ev
 
 | Phone Number   | Email                 | Password | Verification Code (OTP) |
 |----------------|-----------------------|----------|-------------------------|
+| +84999999999   | demo@demo.demo        | 123123   | 000000                  |
 | +84123123123   | 123123@gmail.com       | 123123   | 000000                  |
 | +84111111111   | 111111111@gmail.com    | 123123   | 000000                  |
 | +84987654321   | test@gmail.com         | 123123   | 000000                  |
